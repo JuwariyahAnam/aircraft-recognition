@@ -142,6 +142,8 @@ class AircraftAgent:
                     except ValueError:
                         pass
             result["image_probs"] = image_probs
+            result["frame_thumbs"] = [cv2.resize(f, (160, int(160 * f.shape[0] / f.shape[1])),
+                                                 interpolation=cv2.INTER_AREA) for f in frames]
             result["n_frames"] = len(frames)
             result["frame_probs"] = fp
             result["votes"] = votes
