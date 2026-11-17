@@ -322,15 +322,20 @@ def tint_mask(mask: np.ndarray) -> np.ndarray:
 
 def _head_script() -> str:
     d = str(STATIC).replace("\\", "/")
+    glb = sorted(p.stem for p in (STATIC / "models").glob("*.glb"))
     return f"""<script>
+window.__AERO_GLB = {glb!r};
 (function () {{
   var dir = {d!r};
   var bases = ["gradio_api/file=" + dir, "/gradio_api/file=" + dir, "file=" + dir, "/file=" + dir];
   function load(src, ok, fail) {{ var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); }}
   function tryBase(i) {{
     if (i >= bases.length) {{ console.error("Could not load the 3D viewer files"); return; }}
-    load(bases[i] + "/three.min.js", function () {{ load(bases[i] + "/viewer3d.js", function () {{}}, function () {{}}); }},
-         function () {{ tryBase(i + 1); }});
+    load(bases[i] + "/three.min.js", function () {{
+      window.__AERO_BASE = bases[i];
+      var next = function () {{ load(bases[i] + "/viewer3d.js", function () {{}}, function () {{}}); }};
+      load(bases[i] + "/GLTFLoader.js", next, next);
+    }}, function () {{ tryBase(i + 1); }});
   }}
   tryBase(0);
 }})();

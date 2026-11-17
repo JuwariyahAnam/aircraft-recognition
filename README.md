@@ -16,14 +16,14 @@ A program that recognises the type of aircraft in a **photo, video or sound reco
 
 A dark, cinematic interface. When an aircraft is identified, a **3D model of that aircraft type** appears in the centre: drag to rotate it 360°, scroll to zoom, double-click to reset (arrow keys work too). Before a file is added, a wireframe hologram cycles through the four types; unconfirmed answers show as an amber hologram.
 
-![Solid model for a confident answer, amber hologram for an unconfirmed one](docs/demo_3d.png)
+![The four 3D aircraft: airliner, fighter, helicopter, propeller plane](docs/demo_3d.png)
 
 Below the 3D view:
 * **Why it decided**: drag a slider across the image to switch between what the model saw and its Grad-CAM heatmap (LIME too, if switched on)
 * **Frame by frame** (video): every frame with a colour bar showing what the model saw in it
 * **Picture and sound combined** (video with sound): the image answer, the sound answer and the combined answer
 
-The 3D models are original and built in code from basic shapes. three.js (MIT licence) is bundled in `aircraft_recog/static/`, so the demo needs no internet beyond Gradio's share link. *(Screenshots come from the smoke-test models, so the numbers are not real results.)*
+The four aircraft are original models built in code: fuselages lofted from smooth cross-sections, NACA airfoil wings, painted textures (windows, stripes, panel lines) and studio reflections. To use a professionally made model instead, drop a `.glb` file into `aircraft_recog/static/models/`; see the README in that folder. three.js r147 (MIT licence) is bundled in `aircraft_recog/static/`, so the 3D view needs no internet. *(Screenshots come from the smoke-test models, so the numbers are not real results.)*
 
 ## Pipeline
 
@@ -96,7 +96,7 @@ aircraft_recog/
   steps.py           the build plan as functions (used by the notebook and run_all.py)
   pipeline.py        the agent: route -> convert -> segment -> classify -> explain (+ voting, fusion, reject)
   app.py             Step 10: Gradio demo (layout, animation, evidence views)
-  static/            viewer3d.js (3D aircraft models + controls), three.js
+  static/            viewer3d.js (3D aircraft models + controls), three.js, models/ for optional .glb files
 notebooks/Aircraft_Recognition_Colab.ipynb
 scripts/run_all.py, scripts/make_synthetic_data.py
 ```
