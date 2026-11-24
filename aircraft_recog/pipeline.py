@@ -32,6 +32,10 @@ class AircraftAgent:
         self.unet = load_unet(cfg, self.device) if (m / "unet.pt").exists() else None
         self.image_model = load_model(m / "image_cnn.pt", self.device) if (m / "image_cnn.pt").exists() else None
         self.audio_model = load_model(m / "audio_cnn.pt", self.device) if (m / "audio_cnn.pt").exists() else None
+        self.subtype = None
+        if (m / "subtype_cnn.pt").exists():
+            from .fine_grained import SubtypeRecogniser
+            self.subtype = SubtypeRecogniser(m / "subtype_cnn.pt", self.device)
         if self.image_model is None and self.audio_model is None:
             raise FileNotFoundError(f"No trained models in {m}. Run the training steps first.")
         self.torch = torch
@@ -93,6 +97,19 @@ class AircraftAgent:
             out["gradcam"] = overlay(shown, cam)
         return out
 
+    def _which_model(self, rgb, mask, result):
+        """Fine-grained step: the specific aircraft model, within the predicted type."""
+        from .fine_grained import model_for
+        result["subtypes"], result["subtype"], result["model_key"] = [], None, None
+        if self.subtype is None or result.get("rejected"):
+            return
+        crop = apply_mask(rgb, mask, "crop") if mask is not None else rgb
+        top = self.subtype.predict(crop, result["class"])
+        result["subtypes"] = top
+        if top and top[0][1] >= 0.25:
+            result["subtype"] = top[0][0]
+            result["model_key"] = model_for(top[0][0], result["class"])
+
     # ------------------------------------------------------------ main entry
     def predict(self, path, explain=True, use_lime=False, n_video_frames=16):
         path = Path(path)
@@ -107,6 +124,7 @@ class AircraftAgent:
             a = self.analyse_image(read_rgb(path), explain, use_lime)
             result.update(a)
             result.update(self._verdict(a["probs"], a["note"]))
+            self._which_model(a["input"], a["mask"], result)
 
         elif kind == "audio":
             self._need(self.audio_model, "audio")
@@ -149,6 +167,7 @@ class AircraftAgent:
             result["votes"] = votes
             result["probs"] = probs
             result.update(self._verdict(probs, note))
+            self._which_model(frames[best], shown["mask"], result)
         return result
 
     @staticmethod

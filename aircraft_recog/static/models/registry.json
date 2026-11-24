@@ -1,0 +1,19 @@
+{
+  "b737": {
+    "file": "b737.glb", "name": "Boeing 737 AEW&C", "class": "passenger_jet",
+    "matches": ["Boeing 737", "737", "E-7", "Boeing 737 AEW&C"],
+    "credit": "Boeing 737 AEW&C Prototype by Muhamad Mirza Arrafi (Sketchfab)",
+    "source": "https://sketchfab.com/3d-models/boeing-737-aewc-prototype-bd2d73c132d14a609dbf13bd4cdc652e"
+  },
+  "f16": {
+    "file": "f16.glb", "name": "General Dynamics F-16D Block 60", "class": "fighter_jet",
+    "matches": ["F-16", "F16", "F-16D"],
+    "credit": "General Dynamics F-16D Block 60 (Sketchfab download; add the author from the model page)"
+  },
+  "sh60": {
+    "file": "sh60.glb", "name": "Sikorsky SH-60B Seahawk", "class": "helicopter",
+    "matches": ["SH60", "UH60", "MH60", "SH-60", "UH-60", "Black Hawk", "Seahawk"],
+    "spin": {"Mesh_0051": ["y", 14], "Mesh_0050": ["x", 30]},
+    "credit": "SH-60B Seahawk Helicopter (Sketchfab download; add the author from the model page)"
+  }
+}

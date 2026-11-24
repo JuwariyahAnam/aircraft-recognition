@@ -76,6 +76,12 @@ class Config:
     hpo_epochs: int = 3           # short training run per evaluation
     hpo_subset: int = 1200        # training samples used during search
 
+    # ------------------------------------------- fine-grained (which model)
+    subtype_min_per_class: int = 25     # aircraft models with fewer images are left out
+    subtype_max_per_class: int = 100
+    n_subtype_max: int = 10000
+    subtype_epochs: int = 20
+
     # ------------------------------------------------------ semi-supervised
     pseudo_threshold: float = 0.90
     n_clusters: int = 4
@@ -138,6 +144,7 @@ def fast_config(root: str | Path) -> Config:
         unet_epochs=2, unet_batch=8,
         cnn_epochs=2, cnn_batch=16,
         hpo_budget=4, hpo_pop=2, hpo_epochs=1, hpo_subset=64,
+        subtype_min_per_class=10, subtype_max_per_class=40, subtype_epochs=2,
         seg_size=128, cls_size=112,
         pretrained=False, num_workers=0,
     )

@@ -84,14 +84,15 @@ def make_loader(df, cfg, train, batch, label_col="label_idx", mask_mode="none", 
 
 def train_classifier(train_df, val_df, cfg: Config, hp: dict | None = None, epochs: int | None = None,
                      label_col="label_idx", mask_mode="none", patience: int | None = None,
-                     verbose=True, seed: int | None = None, augment: bool | None = None):
+                     verbose=True, seed: int | None = None, augment: bool | None = None,
+                     num_classes: int = NUM_CLASSES):
     """Train one CNN. Returns (best model, info dict with history and best val accuracy)."""
     seed_everything(cfg.seed if seed is None else seed)
     hp = {**default_hparams(cfg), **(hp or {})}
     epochs = epochs or cfg.cnn_epochs
     patience = cfg.early_stop_patience if patience is None else patience
     device = get_device()
-    model = AircraftNet(cfg.cnn_arch, NUM_CLASSES, hp["dropout"], hp["unfrozen"], cfg.pretrained).to(device)
+    model = AircraftNet(cfg.cnn_arch, num_classes, hp["dropout"], hp["unfrozen"], cfg.pretrained).to(device)
     tl = make_loader(train_df, cfg, True, hp["batch"], label_col, mask_mode, augment)
     vl = make_loader(val_df, cfg, False, 64, "label_idx", mask_mode)
     params = [p for p in model.parameters() if p.requires_grad]
@@ -137,6 +138,7 @@ def train_classifier(train_df, val_df, cfg: Config, hp: dict | None = None, epoc
 @torch.no_grad()
 def predict_loader(model, loader, device=None):
     device = device or next(model.parameters()).device
+    n_out = model.head[-1].out_features
     model.eval()
     probs, ys = [], []
     for x, y in loader:
@@ -145,11 +147,11 @@ def predict_loader(model, loader, device=None):
         probs.append(torch.softmax(logits.float(), 1).cpu().numpy())
         ys.append(y.numpy())
     if not probs:
-        return np.zeros((0, NUM_CLASSES)), np.zeros(0, int)
+        return np.zeros((0, n_out)), np.zeros(0, int)
     return np.concatenate(probs), np.concatenate(ys)
 
 
-def metrics_from(y_true, probs):
+def metrics_from(y_true, probs, topk=(5,)):
     if len(y_true) == 0:
         return {"accuracy": float("nan"), "macro_f1": float("nan"), "precision": float("nan"),
                 "recall": float("nan"), "n": 0, "confusion": []}
@@ -161,7 +163,10 @@ def metrics_from(y_true, probs):
         "precision": float(precision_score(y_true, pred, labels=present, average="macro", zero_division=0)),
         "recall": float(recall_score(y_true, pred, labels=present, average="macro", zero_division=0)),
         "n": int(len(y_true)),
-        "confusion": confusion_matrix(y_true, pred, labels=list(range(NUM_CLASSES))).tolist(),
+        "confusion": confusion_matrix(y_true, pred, labels=list(range(probs.shape[1]))).tolist()
+        if probs.shape[1] <= 12 else [],
+        **{f"top{k}_accuracy": float(np.mean([y in np.argsort(-p)[:k] for y, p in zip(y_true, probs)]))
+           for k in topk if probs.shape[1] > k},
     }
 
 
@@ -196,8 +201,8 @@ def clip_vote_accuracy(df, probs):
     return {"clip_accuracy": float(np.mean(correct)), "n_clips": len(correct)}
 
 
-def save_model(model, path, extra: dict | None = None):
-    torch.save({"state_dict": model.state_dict(), "hparams": model.hparams, "classes": CLASSES,
+def save_model(model, path, extra: dict | None = None, classes=None):
+    torch.save({"state_dict": model.state_dict(), "hparams": model.hparams, "classes": list(classes or CLASSES),
                 **(extra or {})}, path)
 
 

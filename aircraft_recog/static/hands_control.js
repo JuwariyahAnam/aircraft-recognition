@@ -136,8 +136,9 @@
     el.classList.add("on");
     document.body.style.overflow = "hidden";
     if (viewer) { home = viewer.host; viewer.attach($("#sim-stage"), true); }
+    const reg = window.__AERO_MODELS || {}, key = viewer && viewer.modelKey;
     const cls = viewer && viewer.cls && NAMES[viewer.cls];
-    $("#sim-cls").textContent = cls || "Not identified yet";
+    $("#sim-cls").textContent = (key && reg[key] && cls ? reg[key].name : cls) || "Not identified yet";
     if (viewer && !viewer.cls) viewer.setState({ state: "result", cls: "passenger_jet" });
     msg('<div class="spin"></div>Starting the camera…');
     log("Simulation started");

@@ -7,10 +7,9 @@
  * lines) is drawn onto canvas textures. A studio environment map gives the
  * paint and glass realistic reflections.
  *
- * Real model files: put a .glb file in static/models/<class>.glb
- * (passenger_jet, fighter_jet, helicopter, propeller) and the viewer uses it
- * instead. Optional static/models/<class>.json: {"rotateX":0,"rotateY":90,"rotateZ":0}
- * (degrees) to turn the model so its nose points right.
+ * Realistic models: static/models/registry.json lists .glb files (e.g. a
+ * Boeing 737, an F-16, an SH-60 Seahawk). When the recogniser names a type or
+ * a specific aircraft that has a model there, that model is shown instead.
  *
  * Drag to rotate 360 degrees, scroll or pinch to zoom, double-click to reset.
  */
@@ -354,22 +353,30 @@
   }
 
   // ------------------------------------------------------------ real model files
+  // window.__AERO_MODELS (set by the app from models/registry.json):
+  //   { key: {file, name, class, spin: {meshName: [axis, speed]}} }
   const glbCache = {};
-  function loadGLB(cls) {
-    if (glbCache[cls]) return glbCache[cls];
-    const base = window.__AERO_BASE;
-    glbCache[cls] = new Promise((resolve) => {
-      const listed = window.__AERO_GLB || [];
-      if (!base || !T.GLTFLoader || listed.indexOf(cls) < 0) return resolve(null);
-      const url = `${base}/models/${cls}.glb`;
-      fetch(url, { method: "HEAD" }).then((r) => {
-        if (!r.ok) return resolve(null);
-        fetch(`${base}/models/${cls}.json`).then((j) => (j.ok ? j.json() : {})).catch(() => ({})).then((cfg) => {
-          new T.GLTFLoader().load(url, (gltf) => resolve(normalise(gltf.scene, cfg || {})), undefined, () => resolve(null));
+  function modelFor(cls, key) {
+    const reg = window.__AERO_MODELS || {};
+    if (key && reg[key]) return key;
+    return Object.keys(reg).find((k) => reg[k].class === cls) || null;
+  }
+  function loadGLB(key) {
+    if (!key) return Promise.resolve(null);
+    if (glbCache[key]) return glbCache[key];
+    const base = window.__AERO_BASE, entry = (window.__AERO_MODELS || {})[key];
+    glbCache[key] = new Promise((resolve) => {
+      if (!base || !T.GLTFLoader || !entry) return resolve(null);
+      new T.GLTFLoader().load(`${base}/models/${entry.file}`, (gltf) => {
+        const obj = normalise(gltf.scene, entry);
+        Object.entries(entry.spin || {}).forEach(([name, [axis, speed]]) => {
+          const node = obj.getObjectByName(name);
+          if (node) node.userData.spin = { axis, speed };
         });
-      }).catch(() => resolve(null));
+        resolve(obj);
+      }, undefined, (err) => { console.warn("model failed to load", key, err); resolve(null); });
     });
-    return glbCache[cls];
+    return glbCache[key];
   }
   function normalise(obj, cfg) {
     const d = Math.PI / 180;
@@ -524,7 +531,8 @@
       if (this.state === "result") {
         this.pitch = 0.22; this.zoom = 1; this.yaw = -0.65;
         this._show(BUILD[s.cls]().group);
-        loadGLB(s.cls).then((obj) => { if (obj && token === this.token) this._show(obj.clone()); });
+        this.modelKey = modelFor(s.cls, s.model);
+        loadGLB(this.modelKey).then((obj) => { if (obj && token === this.token) this._show(obj.clone()); });
       } else if (this.state === "low") {
         this._show(this._holo(s.cls, AMBER, 0.55));
       } else if (this.state === "loading") {
@@ -592,7 +600,7 @@
     const st = document.querySelector("#viewer-state .vstate");
     if (st && viewer && st.dataset.key !== lastKey) {
       lastKey = st.dataset.key;
-      viewer.setState({ state: st.dataset.state, cls: st.dataset.cls });
+      viewer.setState({ state: st.dataset.state, cls: st.dataset.cls, model: st.dataset.model });
       document.querySelectorAll("[data-mod-item]").forEach((n) => n.classList.toggle("on", n.dataset.modItem === st.dataset.mod));
     }
   }
@@ -604,5 +612,5 @@
     if (e.target.classList && e.target.classList.contains("cmp-range"))
       e.target.closest(".cmp").style.setProperty("--x", e.target.value + "%");
   });
-  window.AeroViewer = { get: () => viewer, show: (cls) => viewer && viewer.setState({ state: "result", cls }) };
+  window.AeroViewer = { get: () => viewer, show: (cls, model) => viewer && viewer.setState({ state: "result", cls, model }) };
 })();

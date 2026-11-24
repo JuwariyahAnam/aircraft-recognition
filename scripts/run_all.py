@@ -34,6 +34,7 @@ def main():
     if s <= 3: steps.step3_build_dataset(cfg, denoise=not a.fast)
     if s <= 5: print(steps.step5_segmentation(cfg)["test"])
     if s <= 6: print(steps.step6_baselines(cfg).to_string())
+    if s <= 6: steps.step6b_fine_grained(cfg)
     if s <= 7: steps.step7_optimize(cfg)
     if s <= 8: print(steps.step8_semi_supervised(cfg))
     if s <= 9: steps.step9_explain(cfg, lime_n=1 if a.fast else 3)

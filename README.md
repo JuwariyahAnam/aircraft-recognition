@@ -25,6 +25,36 @@ Below the 3D view:
 
 The four aircraft are original models built in code: fuselages lofted from smooth cross-sections, NACA airfoil wings, painted textures (windows, stripes, panel lines) and studio reflections. To use a professionally made model instead, drop a `.glb` file into `aircraft_recog/static/models/`; see the README in that folder. three.js r147 (MIT licence) is bundled in `aircraft_recog/static/`, so the 3D view needs no internet. *(Screenshots come from the smoke-test models, so the numbers are not real results.)*
 
+## Exact aircraft model + realistic 3D
+
+Besides the four types, a second fine-grained classifier recognises **which aircraft** it is: one of about
+70+ models from FGVC-Aircraft's families (Boeing 737, A320, ATR-72, ...) and the military dataset (F-16, Su-57, UH-60, ...).
+Its answer is restricted to models of the predicted type, so the two answers never contradict each other.
+When the recognised aircraft has a realistic 3D model, the demo shows that exact aircraft:
+
+| Recognised as | 3D model shown |
+|---|---|
+| Boeing 737 | Boeing 737 AEW&C (textured model) |
+| F-16 | General Dynamics F-16D Block 60 (textured model, with cockpit and weapons) |
+| UH-60 / SH-60 / MH-60 | Sikorsky SH-60B Seahawk (textured model, spinning rotors) |
+| anything else | the closest available model of that type, or the code-built aircraft |
+
+More models can be added in `aircraft_recog/static/models/` (see its README for the format and credits).
+
+## Hand-control simulation
+
+**Enter simulation** on the 3D stage opens a full-screen augmented-reality view: your webcam fills the screen,
+the identified aircraft floats in front of you, and your hands control it (tracked in the browser with MediaPipe Hands,
+bundled; no video leaves the computer):
+
+* **Open palm**: the aircraft hovers above your hand; tilt your hand to bank it
+* **Pinch**: grab and turn it
+* **Two hands**: spread apart to zoom in, bring together to zoom out
+* **Fist** (hold): reset the view
+
+A HUD shows the aircraft and status, live telemetry (yaw, pitch, bank, zoom, hands, tracking speed) and a gesture log.
+Open the public link in its own browser tab so the page can use the camera.
+
 ## Pipeline
 
 ```mermaid
@@ -86,6 +116,7 @@ aircraft_recog/
   segmentation.py    Step 5b: U-Net training, IoU / Dice, mask prediction
   datasets.py        augmentation (data synthesis), SpecAugment, mask application
   classifier.py      Step 6: ResNet-18 / EfficientNet-B0 transfer learning, metrics, video voting
+  fine_grained.py    Step 6b: which exact aircraft model (Boeing 737, F-16, ...), linked to 3D models
   optimizers.py      Step 7: PSO, Genetic Algorithm, Grey Wolf, random search (written from scratch)
   hpo.py             fair optimizer comparison (same budget), convergence plot
   semi_supervised.py Step 8: features, K-means vs DBSCAN, silhouette, pseudo-labels, t-SNE
@@ -96,7 +127,8 @@ aircraft_recog/
   steps.py           the build plan as functions (used by the notebook and run_all.py)
   pipeline.py        the agent: route -> convert -> segment -> classify -> explain (+ voting, fusion, reject)
   app.py             Step 10: Gradio demo (layout, animation, evidence views)
-  static/            viewer3d.js (3D aircraft models + controls), three.js, models/ for optional .glb files
+  static/            viewer3d.js (3D viewer), hands_control.js (hand-control simulation),
+                     models/ (realistic .glb aircraft + registry), mediapipe/ (hand tracking), three.js
 notebooks/Aircraft_Recognition_Colab.ipynb
 scripts/run_all.py, scripts/make_synthetic_data.py
 ```

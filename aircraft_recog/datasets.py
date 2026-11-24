@@ -58,8 +58,9 @@ def apply_mask(img: np.ndarray, mask: np.ndarray | None, mode: str = "mask_crop"
     if m.mean() < min_area:
         return img
     out = img.copy()
-    out[~m] = BG_COLOR
-    if mode == "mask_crop":
+    if mode != "crop":          # "crop" keeps the background, like the fine-grained training crops
+        out[~m] = BG_COLOR
+    if mode in ("mask_crop", "crop"):
         ys, xs = np.where(m)
         y1, y2, x1, x2 = ys.min(), ys.max(), xs.min(), xs.max()
         h, w = img.shape[:2]

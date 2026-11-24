@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import experiments as ex
 from .classifier import (default_hparams, evaluate, load_model, save_model, split_frames,
-                         strip_probs)
+                         strip_probs, train_classifier)
 from .config import CLASSES, PRETTY, Config
 from .data_prep import build_dataset, download_all, load_manifest, save_manifest
 from .utils import read_rgb, save_json, seed_everything, timer
@@ -59,6 +59,33 @@ def step6_baselines(cfg: Config):
         ex.record(cfg, "baseline_audio", r)
         ex.plot_training_curves(r["info"], "Audio CNN (baseline)", cfg.results / "curves_audio.png")
     return ex.results_table(cfg)
+
+
+# --------------------------------------------------------------- step 6b
+def step6b_fine_grained(cfg: Config, rebuild: bool = False):
+    """Train the 'which aircraft model' classifier (Boeing 737, F-16, ...).
+
+    Needs the raw downloads the first time (it crops the original images);
+    after that the processed crops in Drive are reused."""
+    from .fine_grained import build_subtype_dataset, load_subtype_data, model_for
+    if rebuild or not (cfg.processed / "subtype_manifest.csv").exists():
+        build_subtype_dataset(cfg)
+    df, names = load_subtype_data(cfg)
+    tr, va, te = (df[df.split == s] for s in ("train", "val", "test"))
+    hp = ex.get(cfg, "hp_image_pso") or default_hparams(cfg)
+    print(f"\n### Fine-grained CNN: {len(names)} aircraft models, {len(tr)} training images")
+    model, info = train_classifier(tr, va, cfg, hp, epochs=cfg.subtype_epochs, mask_mode="none",
+                                   num_classes=len(names))
+    m = strip_probs(evaluate(model, te, cfg, "none"))
+    save_model(model, cfg.models / "subtype_cnn.pt", classes=[n["name"] for n in names],
+               extra={"parents": [n["class"] for n in names], "size": cfg.cls_size})
+    with3d = [n["name"] for n in names if model_for(n["name"])]
+    res = {"n_models": len(names), "test": m, "info": info, "aircraft_models": names, "with_3d_model": with3d}
+    save_json(res, cfg.results / "fine_grained_metrics.json")
+    print(f"Fine-grained TEST: top-1 {m['accuracy']:.3f}, top-5 {m.get('top5_accuracy', float('nan')):.3f}, "
+          f"macro-F1 {m['macro_f1']:.3f}")
+    print("Aircraft models with a realistic 3D model:", ", ".join(with3d) or "none")
+    return res
 
 
 # ---------------------------------------------------------------- step 7

@@ -122,7 +122,7 @@ def scan_fgvc(cfg: Config) -> list[dict]:
             if label is None:
                 skipped[family] += 1
                 continue
-            recs.append(dict(path=str(data_dir / "images" / f"{img_id}.jpg"), label=label,
+            recs.append(dict(path=str(data_dir / "images" / f"{img_id}.jpg"), label=label, subtype=family.strip(),
                              box=boxes.get(img_id), source="fgvc", group=f"fgvc_{img_id}",
                              crop_bottom=FGVC_BANNER_PX))
     _report("fgvc", recs, skipped)
@@ -163,7 +163,7 @@ def scan_military(cfg: Config) -> list[dict]:
             area = (box[2] - box[0]) * (box[3] - box[1])
             best = per_image.get(str(img))
             if best is None or area > best["_area"]:     # keep the largest aircraft
-                per_image[str(img)] = dict(path=str(img), label=label, box=box,
+                per_image[str(img)] = dict(path=str(img), label=label, box=box, subtype=r["class"].strip(),
                                            source="military", group=f"mil_{img.stem}",
                                            _area=area)
     recs = [{k: v for k, v in r.items() if k != "_area"} for r in per_image.values()]
@@ -178,7 +178,7 @@ def scan_military(cfg: Config) -> list[dict]:
                     skipped[cls_dir.name] += len(files)
                     continue
                 for p in files:
-                    recs.append(dict(path=str(p), label=label, box=None, source="military_crop",
+                    recs.append(dict(path=str(p), label=label, box=None, source="military_crop", subtype=cls_dir.name,
                                      group=f"milc_{cls_dir.name}_{p.stem}"))
     _report("military", recs, skipped)
     return recs

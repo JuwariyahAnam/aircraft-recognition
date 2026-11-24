@@ -18,7 +18,7 @@ import soundfile as sf
 CLASSES = ["passenger_jet", "fighter_jet", "helicopter", "propeller"]
 FGVC_FAMILY = {"passenger_jet": ["Boeing 737", "A320"], "fighter_jet": ["F-16", "Tornado"],
                "propeller": ["ATR-72", "Cessna 172"]}
-MIL_CLASS = {"fighter_jet": ["F16", "Su57"], "helicopter": ["AH64", "Mi24"]}
+MIL_CLASS = {"fighter_jet": ["F16", "Su57"], "helicopter": ["UH60", "Mi24"]}
 
 
 def sky(h, w, rng):

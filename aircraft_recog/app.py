@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import time
 from pathlib import Path
 
@@ -212,6 +213,11 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .type-big { font-weight: 300; font-size: 28px; line-height: 1.1; letter-spacing: -0.02em; color: #F4F4F4; }
 .panel.low .type-big { color: var(--amber); }
 .small { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 6px; font-weight: 300; }
+.fine { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); display: grid; gap: 4px; }
+.fine .k { font-size: 12px; color: var(--muted); font-weight: 300; }
+.fine .v { font-size: 19px; font-weight: 300; letter-spacing: -0.01em; color: #F4F4F4; }
+.fine .v em { font-style: normal; color: var(--accent); font-size: 15px; margin-left: 6px; }
+.fine .also { font-size: 12px; color: var(--dim); font-weight: 300; }
 .warn { font-size: 12.5px; color: var(--amber); line-height: 1.5; margin-top: 12px; }
 
 .bars { display: grid; gap: 12px; margin-top: 14px; }
@@ -327,11 +333,22 @@ def tint_mask(mask: np.ndarray) -> np.ndarray:
     return out
 
 
+def available_models() -> dict:
+    """Entries of static/models/registry.json whose .glb file is present."""
+    p = STATIC / "models" / "registry.json"
+    if not p.exists():
+        return {}
+    reg = json.loads(p.read_text())
+    return {k: v for k, v in reg.items() if (STATIC / "models" / v.get("file", "")).exists()}
+
+
 def _head_script() -> str:
     d = str(STATIC).replace("\\", "/")
-    glb = sorted(p.stem for p in (STATIC / "models").glob("*.glb"))
-    return f"""<script>
-window.__AERO_GLB = {glb!r};
+    models = json.dumps(available_models())
+    return f"""<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500&display=swap">
+<script>
+window.__AERO_MODELS = {models};
 (function () {{
   var dir = {d!r};
   var bases = ["gradio_api/file=" + dir, "/gradio_api/file=" + dir, "file=" + dir, "/file=" + dir];
@@ -375,11 +392,16 @@ def stage_html() -> str:
             f'{HAND_ICON}ENTER SIMULATION</button></div>')
 
 
-def vstate_html(state: str, cls: str = "", mod: str = "") -> str:
-    key = f"{state}-{cls}-{time.time():.3f}"
+def vstate_html(state: str, cls: str = "", mod: str = "", model: str = "", title: str = "") -> str:
+    key = f"{state}-{cls}-{model}-{time.time():.3f}"
     if state in ("result", "low"):
-        cap = (f'<div class="name{" low" if state == "low" else ""}">{_e(PRETTY[cls])}</div>'
-               f'<div class="hint">Drag to rotate, scroll to zoom, double-click to reset</div>')
+        sub = f'{_e(PRETTY[cls])}. ' if title and title != PRETTY[cls] else ""
+        if title and not model:
+            fallback = next((v["name"] for v in available_models().values() if v.get("class") == cls), None)
+            if fallback:
+                sub += f"Shown with the {_e(fallback)} 3D model, the closest one available. "
+        cap = (f'<div class="name{" low" if state == "low" else ""}">{_e(title or PRETTY[cls])}</div>'
+               f'<div class="hint">{sub}Drag to rotate, scroll to zoom, double-click to reset</div>')
     elif state == "loading":
         cap = '<div class="hint pulse">Analysing…</div>'
     elif state == "error":
@@ -387,7 +409,8 @@ def vstate_html(state: str, cls: str = "", mod: str = "") -> str:
     else:
         cap = ('<div class="hint">Recognises passenger jets, fighter jets, helicopters and propeller aircraft. '
                'Drag the hologram to look around.</div>')
-    return (f'<div class="vstate" data-key="{key}" data-state="{state}" data-cls="{cls}" data-mod="{mod}" hidden></div>'
+    return (f'<div class="vstate" data-key="{key}" data-state="{state}" data-cls="{cls}" data-mod="{mod}" '
+            f'data-model="{_e(model)}" hidden></div>'
             f'<div class="stage-caption">{cap}</div>')
 
 
@@ -412,6 +435,13 @@ def result_html(r: dict | None = None, state: str = "idle", error: str = "") -> 
     else:
         detail = "From a single photo."
     pct = int(round(r["confidence"] * 100))
+    fine = ""
+    if r.get("subtypes"):
+        (name, p), rest = r["subtypes"][0], r["subtypes"][1:]
+        also = ", ".join(f"{_e(n)} {q:.0%}" for n, q in rest if q >= 0.05)
+        fine = (f'<div class="fine"><span class="k">Closest aircraft model</span>'
+                f'<span class="v">{_e(name)} <em>{p:.0%}</em></span>'
+                + (f'<span class="also">Also possible: {also}</span>' if also else "") + "</div>")
     warn = (f'<div class="warn">Below the {int(r["threshold"] * 100)}% confidence limit, so this may not be '
             'an aircraft at all.</div>' if r["rejected"] else "")
     return (f'<div class="panel{" low" if r["rejected"] else ""}"><div class="tickmark"></div>'
@@ -419,7 +449,7 @@ def result_html(r: dict | None = None, state: str = "idle", error: str = "") -> 
             f'<div class="result-row"><div class="ring-wrap" role="img" aria-label="{pct} percent confident">'
             f'<div class="ring" style="--target:{pct}"></div><div class="ring-num" style="--target:{pct}"></div></div>'
             f'<div><div class="type-big">{_e(r["label"])}</div><div class="small">{_e(detail)}</div></div></div>'
-            f'{warn}</div>')
+            f'{fine}{warn}</div>')
 
 
 def bars_html(r: dict | None) -> str:
@@ -578,7 +608,8 @@ def build_demo(cfg: Config):
         r["threshold"] = cfg.reject_threshold
         r["audio_weight"] = cfg.fusion_audio_weight
         state = "low" if r["rejected"] else "result"
-        return (vstate_html(state, r["class"], r["modality"]), result_html(r),
+        return (vstate_html(state, r["class"], r["modality"], r.get("model_key") or "", r.get("subtype") or ""),
+                result_html(r),
                 bars_html(r), route_html(r), evidence_html(r), breakdown_html(r))
 
     with gr.Blocks(title="AERO-ID – aircraft recognition", **_blocks_kwargs(gr, theme)) as demo:

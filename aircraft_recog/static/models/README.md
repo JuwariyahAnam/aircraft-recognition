@@ -1,20 +1,30 @@
-# Optional: realistic 3D model files
+# 3D aircraft models
 
-The demo draws its own aircraft by default. To use a professionally made
-model instead, put a glTF binary file here with one of these names:
+`registry.json` lists the realistic models the demo can show. Each entry has:
 
-    passenger_jet.glb   fighter_jet.glb   helicopter.glb   propeller.glb
+* `file`: the `.glb` file in this folder
+* `name`: the name shown on screen
+* `class`: which of the four types it belongs to (used when no exact match is known)
+* `matches`: aircraft names from the fine-grained classifier that should show this model
+* `spin` (optional): mesh names that rotate (rotors, propellers): `{"MeshName": ["y", speed]}`
+* `credit` / `source`: the author and page, for your report's credits
 
-The viewer finds it automatically, centres it and scales it to fit.
+Types with no model here fall back to the aircraft drawn in code (`viewer3d.js`).
 
-If the nose doesn't point to the right, add a JSON file with the same name,
-e.g. `passenger_jet.json`:
+## Adding a model
 
-    {"rotateX": 0, "rotateY": 90, "rotateZ": 0}
+1. Download a model (e.g. from Sketchfab, glTF/GLB format, CC licence).
+2. Make sure its nose points along +X and its top along +Y, centred, about 4.4 units long.
+   Models converted with this project's converter are already prepared this way.
+3. Copy the `.glb` here and add an entry to `registry.json`.
 
-(degrees; try 90, 180 or -90 on rotateY first).
+## Credits for the included models
 
-Where to get free models: search Sketchfab (sketchfab.com) with the
-"Downloadable" filter and a Creative Commons licence, and download in
-glTF/GLB format. Keep the files small (under ~20 MB) so the page loads
-quickly. Credit the author in your report if the licence is CC-BY.
+* Boeing 737 AEW&C Prototype by Muhamad Mirza Arrafi:
+  https://sketchfab.com/3d-models/boeing-737-aewc-prototype-bd2d73c132d14a609dbf13bd4cdc652e
+  (the Sketchfab page is labelled "Generated with AI")
+* General Dynamics F-16D Block 60: downloaded from Sketchfab. Check the model page for the author and licence.
+* SH-60B Seahawk Helicopter: downloaded from Sketchfab. Check the model page for the author and licence.
+
+The OBJ files had no material files, so textures were matched to parts by hand,
+the models were turned to face +X, scaled, and saved as GLB with embedded textures.
