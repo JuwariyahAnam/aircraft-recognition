@@ -1,5 +1,8 @@
 # Explainable Multimodal Aircraft Recognition using Deep Learning
 
+**Live site (3D hangar + hand-control simulation):** https://juwariyahanam.github.io/aircraft-recognition/  
+**Run the full app in Colab:** https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb
+
 A program that recognises the type of aircraft in a **photo, video or sound recording** and shows **why** it made that decision.
 
 | | |
