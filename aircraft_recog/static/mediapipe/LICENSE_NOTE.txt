@@ -1,0 +1,2 @@
+MediaPipe Hands 0.4.1675469240 (Apache License 2.0), copied from the @mediapipe/hands npm package.
+https://github.com/google/mediapipe

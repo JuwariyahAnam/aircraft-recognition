@@ -431,9 +431,11 @@
       this.pivot = new T.Group(); this.scene.add(this.pivot);
       this.yaw = -0.65; this.pitch = 0.22; this.vYaw = 0; this.zoom = 1;
       this.lastInteract = 0; this.model = null; this.state = "idle"; this.cycle = 0; this.flyT = 1; this.token = 0;
+      this.anchor = new T.Vector3(); this.anchorTarget = new T.Vector3(); this.bank = 0; this.bankTarget = 0; this.ar = false;
+      this.ray = new T.Raycaster(); this.cls = "";
       this.clock = new T.Clock();
       this._controls();
-      new ResizeObserver(() => this._resize()).observe(host);
+      this._ro = new ResizeObserver(() => this._resize()); this._ro.observe(host);
       this._resize();
       this.setState({ state: "idle" });
       this._loop();
@@ -477,6 +479,33 @@
       });
     }
 
+    // ---- hooks used by hand-gesture control (hands_control.js)
+    grab(dx, dy) {
+      this.vYaw = dx; this.yaw += dx;
+      this.pitch = Math.max(-0.9, Math.min(1.15, this.pitch + dy));
+      this.lastInteract = performance.now();
+    }
+    setZoom(z) { this.zoom = Math.max(0.6, Math.min(1.6, z)); this.lastInteract = performance.now(); }
+    resetView() { this.yaw = -0.65; this.pitch = 0.22; this.zoom = 1; this.vYaw = 0; this.bankTarget = 0; }
+    setBank(a) { this.bankTarget = Math.max(-0.9, Math.min(0.9, a)); }
+    // Place the aircraft under a point on the screen (normalised -1..1 device coordinates), or back in the centre.
+    anchorTo(ndc) {
+      if (!ndc) { this.anchorTarget.set(0, 0, 0); return; }
+      this.ray.setFromCamera(new T.Vector2(ndc[0], ndc[1]), this.camera);
+      const n = this.camera.getWorldDirection(new T.Vector3()).negate();
+      const plane = new T.Plane(n, 0), hit = new T.Vector3();
+      if (this.ray.ray.intersectPlane(plane, hit)) this.anchorTarget.copy(hit);
+    }
+    // Move the canvas into another element (the full-screen simulation) and back.
+    attach(host, ar) {
+      this.host = host; host.appendChild(this.renderer.domElement);
+      this.ar = !!ar; this.ring.visible = !ar; this.shadow.visible = !ar;
+      if (!ar) { this.anchorTarget.set(0, 0, 0); this.bankTarget = 0; }
+      this._ro && this._ro.disconnect();
+      this._ro = new ResizeObserver(() => this._resize()); this._ro.observe(host);
+      this._resize();
+    }
+
     _show(group) {
       while (this.pivot.children.length) this.pivot.remove(this.pivot.children[0]);
       this.model = group;
@@ -489,7 +518,8 @@
     setState(s) {
       const token = ++this.token;
       this.state = s.state || "idle";
-      this.host.dataset.state = this.state;
+      this.cls = s.cls || "";
+      if (!this.ar) this.host.dataset.state = this.state;
       this.ring.material.color.setHex(this.state === "low" ? AMBER : ACCENT);
       if (this.state === "result") {
         this.pitch = 0.22; this.zoom = 1; this.yaw = -0.65;
@@ -521,13 +551,16 @@
       }
       const idleFor = now - this.lastInteract;
       if (idleFor > 60 && idleFor < 1200) { this.yaw += this.vYaw * 0.9; this.vYaw *= 0.92; }
-      if (!reduceMotion && idleFor > 2500) this.yaw += dt * (this.state === "loading" ? 1.6 : 0.25);
+      if (!reduceMotion && idleFor > 2500 && !this.handActive) this.yaw += dt * (this.state === "loading" ? 1.6 : 0.25);
 
       this.flyT = Math.min(1, this.flyT + dt / 0.9);
       const e = 1 - Math.pow(1 - this.flyT, 3);
       this.pivot.scale.setScalar(0.6 + 0.4 * e);
+      this.anchor.lerp(this.anchorTarget, 0.22);
+      this.bank += (this.bankTarget - this.bank) * 0.15;
       this.pivot.rotation.set(0, this.yaw + (1 - e) * 2.2, 0);
-      this.pivot.position.y = (1 - e) * 0.7 + Math.sin(t * 1.1) * 0.035;
+      this.pivot.rotateOnWorldAxis(new T.Vector3(0, 0, 1), this.bank);
+      this.pivot.position.set(this.anchor.x, this.anchor.y + (1 - e) * 0.7 + Math.sin(t * 1.1) * 0.035, this.anchor.z);
 
       const z = this.dist * this.zoom;
       this.camera.position.set(0, Math.sin(this.pitch) * z, Math.cos(this.pitch) * z);

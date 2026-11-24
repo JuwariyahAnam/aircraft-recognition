@@ -181,6 +181,13 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 #stage-canvas[data-state=loading] ~ .hud .scan { opacity: 1; }
 .hud .scan { opacity: 0; transition: opacity .4s; transform-origin: 300px 276px; animation: orbit 2.2s linear infinite; }
 .hud .scan path { stroke: var(--accent); stroke-width: 1.5; }
+#sim-enter { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 10px;
+  background: rgba(16,16,17,.75); color: var(--text); border: 1px solid var(--line); padding: 11px 20px; font: inherit; font-size: 12px;
+  letter-spacing: .14em; cursor: pointer; backdrop-filter: blur(8px); transition: border-color .3s, letter-spacing .3s, background .3s; }
+#sim-enter::before, #sim-enter::after { content: ""; position: absolute; top: -1px; bottom: -1px; width: 6px; border: 2px solid var(--accent); }
+#sim-enter::before { left: -1px; border-right: none; } #sim-enter::after { right: -1px; border-left: none; }
+#sim-enter:hover { background: rgba(30,30,32,.9); letter-spacing: .18em; }
+#sim-enter svg { width: 17px; height: 17px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .stage-caption { text-align: center; margin-top: -54px; position: relative; z-index: 2; pointer-events: none; min-height: 70px; }
 .stage-caption .name { font-weight: 200; font-size: 30px; letter-spacing: -0.02em; color: #F2F2F2; animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
 .stage-caption .name.low { color: var(--amber); }
@@ -333,7 +340,7 @@ window.__AERO_GLB = {glb!r};
     if (i >= bases.length) {{ console.error("Could not load the 3D viewer files"); return; }}
     load(bases[i] + "/three.min.js", function () {{
       window.__AERO_BASE = bases[i];
-      var next = function () {{ load(bases[i] + "/viewer3d.js", function () {{}}, function () {{}}); }};
+      var next = function () {{ load(bases[i] + "/viewer3d.js", function () {{ load(bases[i] + "/hands_control.js", function () {{}}, function () {{}}); }}, function () {{}}); }};
       load(bases[i] + "/GLTFLoader.js", next, next);
     }}, function () {{ tryBase(i + 1); }});
   }}
@@ -357,8 +364,15 @@ def hero_html() -> str:
             'and shows exactly what it based that on.</p></div>')
 
 
+HAND_ICON = ('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v7'
+             'M14 11V5.5a1.5 1.5 0 0 1 3 0V13M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15.6'
+             'a1.6 1.6 0 0 1 2.4-2.1L8 14.5"/></svg>')
+
+
 def stage_html() -> str:
-    return f'<div class="stage"><div id="stage-canvas" data-state="idle"></div>{HUD_SVG}</div>'
+    return (f'<div class="stage"><div id="stage-canvas" data-state="idle"></div>{HUD_SVG}'
+            f'<button id="sim-enter" type="button" title="Control the 3D aircraft with your hands using the webcam">'
+            f'{HAND_ICON}ENTER SIMULATION</button></div>')
 
 
 def vstate_html(state: str, cls: str = "", mod: str = "") -> str:
