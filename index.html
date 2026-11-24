@@ -272,8 +272,19 @@ window.__AERO_MODELS = {
       })();
     }
   }
-  buttons.forEach((b) => b.addEventListener("click", () => pick(b)));
-  pick(buttons[0]);
+  // Links like .../#f16 open that aircraft (the app's "Open in the 3D hangar" uses this).
+  const ALIAS = { passenger_jet: "b737", fighter_jet: "f16", helicopter: "sh60", propeller: "propeller" };
+  function fromHash() {
+    const h = decodeURIComponent((location.hash || "").slice(1));
+    const id = ALIAS[h] || h;
+    return buttons.find((b) => (b.dataset.key || "propeller") === id) || buttons[0];
+  }
+  buttons.forEach((b) => b.addEventListener("click", () => {
+    pick(b);
+    try { history.replaceState(null, "", "#" + (b.dataset.key || "propeller")); } catch (e) {}
+  }));
+  window.addEventListener("hashchange", () => pick(fromHash()));
+  pick(fromHash());
 })();
 </script>
 </body>

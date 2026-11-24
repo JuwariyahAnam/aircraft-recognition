@@ -105,7 +105,14 @@ footer, .progress-text, .eta-bar, .meta-text, .meta-text-center { display: none 
 .nav .mods span { transition: color .4s; position: relative; color: var(--dim) !important; }
 .nav .mods span.on { color: var(--text) !important; }
 .nav .mods span.on::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 4px; height: 4px; background: var(--accent); transform: translateX(-50%); }
-.nav .status { justify-self: end; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted);
+.nav .right { justify-self: end; display: flex; align-items: center; gap: 8px; }
+.nav .navlink { font-size: 12px; color: var(--muted) !important; text-decoration: none; border: 1px solid var(--line); padding: 7px 14px;
+  border-radius: 999px; transition: color .3s, border-color .3s; }
+.nav .navlink:hover { color: var(--text) !important; border-color: rgba(255,255,255,.3); }
+.hangar-link { display: inline-block; margin-top: 14px; font-size: 12px; letter-spacing: .06em; color: var(--text) !important; text-decoration: none;
+  border-bottom: 1px solid var(--accent); padding-bottom: 2px; }
+.hangar-link:hover { color: var(--accent) !important; }
+.nav .status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted);
   border: 1px solid var(--line); padding: 7px 14px; border-radius: 999px; }
 .nav .status b { width: 6px; height: 6px; border-radius: 50%; background: #3BE07B; box-shadow: 0 0 8px #3BE07B; }
 
@@ -367,11 +374,13 @@ window.__AERO_MODELS = {models};
 
 
 # ------------------------------------------------------------------ HTML pieces
-def nav_html(device: str) -> str:
+def nav_html(device: str, site: str = "", repo: str = "") -> str:
+    links = "".join(f'<a class="navlink" href="{_e(u)}" target="_blank" rel="noopener">{t}</a>'
+                    for t, u in (("3D hangar", site), ("GitHub", repo)) if u)
     return (f'<nav class="nav"><div class="brand"><i></i>AERO-ID</div>'
             f'<div class="mods"><span data-mod-item="image">Photo</span><span data-mod-item="video">Video</span>'
             f'<span data-mod-item="audio">Sound</span></div>'
-            f'<div class="status"><b></b>Models ready on {device}</div></nav>')
+            f'<div class="right">{links}<div class="status"><b></b>Models ready on {device}</div></div></nav>')
 
 
 def hero_html() -> str:
@@ -414,7 +423,15 @@ def vstate_html(state: str, cls: str = "", mod: str = "", model: str = "", title
             f'<div class="stage-caption">{cap}</div>')
 
 
-def result_html(r: dict | None = None, state: str = "idle", error: str = "") -> str:
+def hangar_link(r: dict, site: str) -> str:
+    if not site or not r or r.get("rejected"):
+        return ""
+    target = r.get("model_key") or r.get("class", "")
+    return (f'<a class="hangar-link" href="{_e(site)}#{_e(target)}" target="_blank" rel="noopener">'
+            f'Open in the 3D hangar</a>')
+
+
+def result_html(r: dict | None = None, state: str = "idle", error: str = "", site: str = "") -> str:
     if state == "loading":
         return ('<div class="panel"><div class="badge">' + ICON["none"] + '</div><h3>Analysing the file</h3>'
                 '<div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%"></div>'
@@ -449,7 +466,7 @@ def result_html(r: dict | None = None, state: str = "idle", error: str = "") -> 
             f'<div class="result-row"><div class="ring-wrap" role="img" aria-label="{pct} percent confident">'
             f'<div class="ring" style="--target:{pct}"></div><div class="ring-num" style="--target:{pct}"></div></div>'
             f'<div><div class="type-big">{_e(r["label"])}</div><div class="small">{_e(detail)}</div></div></div>'
-            f'{fine}{warn}</div>')
+            f'{fine}{warn}{hangar_link(r, site)}</div>')
 
 
 def bars_html(r: dict | None) -> str:
@@ -609,11 +626,11 @@ def build_demo(cfg: Config):
         r["audio_weight"] = cfg.fusion_audio_weight
         state = "low" if r["rejected"] else "result"
         return (vstate_html(state, r["class"], r["modality"], r.get("model_key") or "", r.get("subtype") or ""),
-                result_html(r),
+                result_html(r, site=cfg.site_url),
                 bars_html(r), route_html(r), evidence_html(r), breakdown_html(r))
 
     with gr.Blocks(title="AERO-ID – aircraft recognition", **_blocks_kwargs(gr, theme)) as demo:
-        gr.HTML(nav_html(device))
+        gr.HTML(nav_html(device, cfg.site_url, cfg.repo_url))
         with gr.Row(equal_height=False):
             with gr.Column(scale=4, min_width=300):
                 gr.HTML(hero_html())

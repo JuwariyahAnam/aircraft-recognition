@@ -90,6 +90,8 @@ class Config:
     reject_threshold: float = 0.55  # below this max-probability -> "not sure / not an aircraft"
     fusion_audio_weight: float = 0.3
 
+    site_url: str = "https://juwariyahanam.github.io/aircraft-recognition/"   # the project website (3D hangar)
+    repo_url: str = "https://github.com/JuwariyahAnam/aircraft-recognition"
     pretrained: bool = True       # set False only for offline smoke tests
     num_workers: int = 2
 
