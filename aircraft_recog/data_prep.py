@@ -55,13 +55,24 @@ def download_military(cfg: Config) -> Path:
     import kagglehub
     path = Path(kagglehub.dataset_download("a2015003713/militaryaircraftdetectiondataset"))
     dst = cfg.raw / "military"
+    dst.parent.mkdir(parents=True, exist_ok=True)
     if not dst.exists():
-        dst.parent.mkdir(parents=True, exist_ok=True)
         try:
             dst.symlink_to(path, target_is_directory=True)
         except OSError:
-            shutil.copytree(path, dst)
+            # Windows without admin rights can't make symlinks: remember where kagglehub put it
+            # instead of copying several GB a second time.
+            (cfg.raw / "military_path.txt").write_text(str(path))
+            return path
     return dst
+
+
+def military_root(cfg: Config) -> Path:
+    p = cfg.raw / "military"
+    note = cfg.raw / "military_path.txt"
+    if not p.exists() and note.exists():
+        return Path(note.read_text().strip())
+    return p
 
 
 def download_aerosonic(cfg: Config, record: str = "8371595") -> Path:
@@ -134,7 +145,7 @@ def scan_military(cfg: Config) -> list[dict]:
 
     Falls back to the dataset's 'crop/<CLASS>/' folders if no box CSVs exist.
     """
-    root = cfg.raw / "military"
+    root = military_root(cfg)
     if not root.exists():
         print("[military] not found - skipping")
         return []

@@ -79,7 +79,8 @@ def make_loader(df, cfg, train, batch, label_col="label_idx", mask_mode="none", 
     ds = AircraftDataset(df, cfg.cls_size, train=train if augment is None else augment,
                          label_col=label_col, mask_mode=mask_mode, seed=cfg.seed)
     return DataLoader(ds, batch_size=int(batch), shuffle=train, num_workers=cfg.num_workers,
-                      drop_last=train and len(df) > batch, pin_memory=torch.cuda.is_available())
+                      drop_last=train and len(df) > batch, pin_memory=torch.cuda.is_available(),
+                      persistent_workers=cfg.num_workers > 0)
 
 
 def train_classifier(train_df, val_df, cfg: Config, hp: dict | None = None, epochs: int | None = None,

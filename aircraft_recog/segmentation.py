@@ -75,7 +75,8 @@ def train_unet(df, cfg: Config):
     tr, va, te = (d[d.split == s] for s in ("train", "val", "test"))
     # The U-Net may use all training images, labelled or not: masks come from boxes, not class labels.
     mk = lambda part, train: DataLoader(SegDataset(part, cfg.seg_size, train), batch_size=cfg.unet_batch,
-                                        shuffle=train, num_workers=cfg.num_workers, drop_last=train and len(part) > cfg.unet_batch)
+                                        shuffle=train, num_workers=cfg.num_workers, drop_last=train and len(part) > cfg.unet_batch,
+                                        persistent_workers=cfg.num_workers > 0)
     tl, vl, tel = mk(tr, True), mk(va, False), mk(te, False)
     model = build_unet(cfg).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.unet_lr)
