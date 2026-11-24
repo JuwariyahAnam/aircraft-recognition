@@ -1,0 +1,1 @@
+ONNX Runtime Web 1.19.2 (MIT License), from the onnxruntime-web npm package.

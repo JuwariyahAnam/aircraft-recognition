@@ -1,6 +1,6 @@
 # Explainable Multimodal Aircraft Recognition using Deep Learning
 
-**Live site (3D hangar + hand-control simulation):** https://juwariyahanam.github.io/aircraft-recognition/  
+**Live site:** https://juwariyahanam.github.io/aircraft-recognition/ (recognition in the browser, 3D hangar, hand-control simulation)  
 **Run the full app in Colab:** https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb
 
 A program that recognises the type of aircraft in a **photo, video or sound recording** and shows **why** it made that decision.
@@ -27,6 +27,21 @@ Below the 3D view:
 * **Picture and sound combined** (video with sound): the image answer, the sound answer and the combined answer
 
 The four aircraft are original models built in code: fuselages lofted from smooth cross-sections, NACA airfoil wings, painted textures (windows, stripes, panel lines) and studio reflections. To use a professionally made model instead, drop a `.glb` file into `aircraft_recog/static/models/`; see the README in that folder. three.js r147 (MIT licence) is bundled in `aircraft_recog/static/`, so the 3D view needs no internet. *(Screenshots come from the smoke-test models, so the numbers are not real results.)*
+
+## The website: recognition in the browser
+
+The project website runs the whole recognition pipeline **inside the visitor's browser** with ONNX Runtime Web,
+so it needs no server and files never leave the device:
+
+* route by file contents, U-Net cut-out, image CNN, exact-model CNN, CAM heatmap (equal to Grad-CAM for this network),
+  video voting over 16 frames, soundtrack fusion, and librosa-identical mel-spectrograms for sound
+* checked against the Python app on the same files: same answers, probabilities within about one percentage point;
+  the browser's spectrograms match librosa exactly
+* LIME stays in the Colab app (too slow for a browser)
+
+After training, **Step 11** of the notebook converts the models (`aircraft_recog/export_web.py`: ONNX with float16
+weights, about 115 MB in total) and pushes them to `web_models/`; the site switches recognition on automatically.
+Before that, the site shows the 3D hangar and the hand-control simulation.
 
 ## Exact aircraft model + realistic 3D
 
@@ -89,6 +104,24 @@ You need a Google account (about 15 GB free in Drive), a Kaggle account (for the
 
 Approximate times on a T4: data preparation 30–45 min, U-Net 15 min, baselines 20 min, optimizer comparison 1–2 h (set `cfg.hpo_budget = 12` to shorten it), pseudo-labelling 15 min, extras 30–45 min.
 
+### On your own computer (NVIDIA GPU or Apple-silicon Mac)
+
+Needs Python 3.11, Git, about 25 GB of free disk space and a Kaggle account. The code picks the GPU automatically
+(NVIDIA via CUDA, Apple M-series via MPS); without one it falls back to the CPU, which is far too slow for training.
+
+```bash
+git clone https://github.com/JuwariyahAnam/aircraft-recognition.git
+cd aircraft-recognition
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121   # NVIDIA; on a Mac: pip install torch torchvision
+pip install -r requirements.txt
+python -c "import torch; print(torch.cuda.is_available())"                        # should print True on NVIDIA
+# put your clips in workdir/raw/video/<class>/*.mp4, then:
+python scripts/run_all.py --root workdir --download
+python -m aircraft_recog.app --root workdir --share                                  # the demo
+```
+
+With 4 GB of GPU memory, lower the batch sizes in `aircraft_recog/config.py` (`unet_batch = 8`, `cnn_batch = 16`).
+
 ### Command line
 
 ```bash
@@ -119,6 +152,7 @@ aircraft_recog/
   segmentation.py    Step 5b: U-Net training, IoU / Dice, mask prediction
   datasets.py        augmentation (data synthesis), SpecAugment, mask application
   classifier.py      Step 6: ResNet-18 / EfficientNet-B0 transfer learning, metrics, video voting
+  export_web.py      Step 11: export the trained models for in-browser recognition on the website
   fine_grained.py    Step 6b: which exact aircraft model (Boeing 737, F-16, ...), linked to 3D models
   optimizers.py      Step 7: PSO, Genetic Algorithm, Grey Wolf, random search (written from scratch)
   hpo.py             fair optimizer comparison (same budget), convergence plot
@@ -131,7 +165,9 @@ aircraft_recog/
   pipeline.py        the agent: route -> convert -> segment -> classify -> explain (+ voting, fusion, reject)
   app.py             Step 10: Gradio demo (layout, animation, evidence views)
   static/            viewer3d.js (3D viewer), hands_control.js (hand-control simulation),
-                     models/ (realistic .glb aircraft + registry), mediapipe/ (hand tracking), three.js
+                     models/ (realistic .glb aircraft + registry), mediapipe/ (hand tracking), three.js,
+                     web_infer.js + ort/ (in-browser recognition with ONNX Runtime Web)
+index.html           the project website (GitHub Pages)
 notebooks/Aircraft_Recognition_Colab.ipynb
 scripts/run_all.py, scripts/make_synthetic_data.py
 ```

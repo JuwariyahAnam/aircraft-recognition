@@ -271,3 +271,10 @@ def extra_ablation(cfg: Config):
                                 extra_train=pseudo, name="no-PSO")
     ex.record(cfg, "ablate_nopso", r)
     return ex.ablation_table(cfg)
+
+
+# --------------------------------------------------------------- step 11
+def step11_export_web(cfg: Config):
+    """Convert the trained models for the website (runs recognition in the browser)."""
+    from .export_web import export_web_models
+    return export_web_models(cfg)

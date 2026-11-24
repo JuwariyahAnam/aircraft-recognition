@@ -23,8 +23,14 @@ def seed_everything(seed: int = 42) -> None:
 
 
 def get_device():
+    """NVIDIA GPU (CUDA) if present, then Apple-silicon GPU (MPS), else CPU."""
     import torch
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    mps = getattr(torch.backends, "mps", None)
+    if mps is not None and mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
 def save_json(obj, path) -> None:

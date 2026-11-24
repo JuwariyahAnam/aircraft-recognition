@@ -4,48 +4,70 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AERO-ID: explainable aircraft recognition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500&display=swap">
 <style>
 @property --p { syntax: '<integer>'; inherits: true; initial-value: 0; }
-:root { --bg:#050505; --panel:#0d0d0e; --line:rgba(255,255,255,.10); --line-soft:rgba(255,255,255,.06); --text:#EDEDED; --muted:#8E8E8E; --dim:#575757; --accent:#FF4D1F; }
+@property --x { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+:root { --bg:#050505; --panel:#0d0d0e; --line:rgba(255,255,255,.10); --line-soft:rgba(255,255,255,.06); --text:#EDEDED; --muted:#8E8E8E; --dim:#575757; --accent:#FF4D1F; --amber:#FFB020; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sora', ui-sans-serif, system-ui, sans-serif; }
-body { background:
-  radial-gradient(ellipse 38% 34% at 50% 30%, rgba(255,77,31,.11), transparent 70%),
-  radial-gradient(ellipse 60% 50% at 50% 36%, #191919 0%, transparent 70%), var(--bg); min-height: 100vh; }
-.wrap { max-width: 1440px; margin: 0 auto; padding: 0 28px 60px; }
+body { background: radial-gradient(ellipse 38% 34% at 50% 26%, rgba(255,77,31,.11), transparent 70%),
+  radial-gradient(ellipse 60% 50% at 50% 32%, #191919 0%, transparent 70%), var(--bg); min-height: 100vh; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 0 28px 70px; }
 a { color: var(--text); }
-a:focus-visible, button:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+a:focus-visible, button:focus-visible, canvas:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+/* nav */
 .nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 22px 6px; border-bottom: 1px solid var(--line-soft); }
 .brand { display: flex; align-items: center; gap: 10px; letter-spacing: .06em; font-size: 15px; }
 .brand i { width: 14px; height: 14px; position: relative; display: inline-block; }
 .brand i::before, .brand i::after { content: ""; position: absolute; left: 6px; top: -2px; width: 1.6px; height: 18px; background: var(--text); transform: rotate(45deg); }
 .brand i::after { transform: rotate(-45deg); }
-.nav .mid { font-size: 13px; color: var(--muted); }
-.nav .links { justify-self: end; display: flex; gap: 10px; }
-.pill { font-size: 12px; color: var(--muted); border: 1px solid var(--line); padding: 7px 14px; border-radius: 999px; text-decoration: none; transition: color .3s, border-color .3s; }
-.pill:hover { color: var(--text); border-color: rgba(255,255,255,.3); }
+.mods { display: flex; gap: 46px; font-size: 13px; }
+.mods span { color: var(--dim); position: relative; transition: color .4s; }
+.mods span.on { color: var(--text); }
+.mods span.on::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 4px; height: 4px; background: var(--accent); transform: translateX(-50%); }
+.right { justify-self: end; display: flex; gap: 8px; align-items: center; }
+.pill { font-size: 12px; color: var(--muted); border: 1px solid var(--line); padding: 7px 14px; border-radius: 999px; text-decoration: none; transition: color .3s, border-color .3s; white-space: nowrap; }
+a.pill:hover { color: var(--text); border-color: rgba(255,255,255,.3); }
+.status { display: flex; align-items: center; gap: 8px; }
+.status b { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+.status.ok b { background: #3BE07B; box-shadow: 0 0 8px #3BE07B; }
+.status.off b { background: var(--amber); }
 
-.grid { display: grid; grid-template-columns: minmax(280px, 4fr) minmax(320px, 5fr) minmax(260px, 3fr); gap: 28px; }
+/* layout */
+.grid { display: grid; grid-template-columns: minmax(290px, 4fr) minmax(320px, 5fr) minmax(270px, 3fr); gap: 28px; }
 .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin: 34px 0 18px; }
 .eyebrow::before { content: "\2715"; color: var(--text); font-size: 10px; }
 h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; letter-spacing: -0.035em; margin: 0; color: #F4F4F4; }
 .px { display: inline-grid; grid-template-columns: repeat(3, 6px); gap: 2px; margin-left: 12px; vertical-align: middle; }
 .px i { width: 6px; height: 6px; background: #CFCFCF; }
 .px i:nth-child(2), .px i:nth-child(4), .px i:nth-child(9) { background: transparent; }
-.lede { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 40ch; margin: 18px 0 26px; font-weight: 300; }
+.lede { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 42ch; margin: 18px 0 24px; font-weight: 300; }
 
-.hangar { display: grid; gap: 8px; }
-.ac { position: relative; text-align: left; background: rgba(255,255,255,.02); border: 1px solid var(--line); color: var(--text); padding: 14px 16px;
-  font: inherit; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; transition: border-color .3s, background .3s; }
+/* drop zone */
+.drop { display: grid; place-items: center; text-align: center; gap: 6px; min-height: 160px; padding: 20px; cursor: pointer;
+  border: 1px dashed rgba(255,255,255,.2); background: rgba(255,255,255,.02); transition: border-color .3s, box-shadow .3s, background .3s; }
+.drop:hover, .drop.over { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(255,77,31,.08), inset 0 0 40px rgba(255,77,31,.06); }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop .big { font-size: 15px; font-weight: 300; color: var(--text); }
+.drop .small { font-size: 12px; color: var(--muted); }
+.drop .file { font-size: 12px; color: var(--accent); }
+.drop.disabled { opacity: .55; cursor: not-allowed; }
+.note-off { font-size: 12.5px; line-height: 1.55; color: var(--muted); margin-top: 10px; display: none; }
+.note-off.show { display: block; }
+.note-off a { color: var(--text); }
+.sub { font-size: 13px; color: var(--muted); margin: 26px 0 10px; font-weight: 300; }
+.hangar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ac { position: relative; text-align: left; background: rgba(255,255,255,.02); border: 1px solid var(--line); color: var(--text); padding: 12px 14px;
+  font: inherit; cursor: pointer; display: grid; gap: 3px; transition: border-color .3s, background .3s; }
 .ac:hover { border-color: rgba(255,255,255,.28); }
-.ac .n { font-size: 15px; font-weight: 300; }
-.ac .t { font-size: 12px; color: var(--muted); grid-column: 1; }
-.ac .tag { grid-row: 1 / 3; grid-column: 2; font-size: 11px; color: var(--dim); }
+.ac .n { font-size: 13.5px; font-weight: 300; }
+.ac .t { font-size: 11.5px; color: var(--muted); }
 .ac[aria-pressed="true"] { border-color: var(--accent); background: rgba(255,77,31,.06); }
-.ac[aria-pressed="true"]::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--accent); }
 
+/* stage */
 .stage { position: relative; height: 600px; margin-top: 8px; }
 #stage-canvas { position: absolute; inset: 0; cursor: grab; }
 #stage-canvas.grabbing { cursor: grabbing; }
@@ -55,8 +77,11 @@ h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; l
 .hud svg { width: 100%; height: 100%; overflow: visible; }
 .hud .orbit { transform-origin: 300px 276px; animation: orbit 60s linear infinite; }
 .hud .orbit2 { transform-origin: 300px 276px; animation: orbit 90s linear infinite reverse; }
+.hud .scan { opacity: 0; transition: opacity .4s; transform-origin: 300px 276px; animation: orbit 2.2s linear infinite; }
+.stage.busy .hud .scan { opacity: 1; } .stage.busy .hud .orbit { animation-duration: 6s; }
 @keyframes orbit { to { transform: rotate(360deg); } }
 .hud circle, .hud line, .hud path { fill: none; stroke: rgba(255,255,255,.16); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hud .scan path { stroke: var(--accent); stroke-width: 1.5; }
 .hud .x line { stroke: rgba(255,255,255,.55); } .hud .x circle { stroke: rgba(255,255,255,.4); }
 .hud .dot { fill: rgba(255,255,255,.7); stroke: none; }
 #sim-enter { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 10px;
@@ -68,32 +93,94 @@ h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; l
 #sim-enter svg { width: 17px; height: 17px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .caption { text-align: center; margin-top: -54px; position: relative; z-index: 2; pointer-events: none; min-height: 70px; }
 .caption .name { font-weight: 200; font-size: 30px; letter-spacing: -0.02em; color: #F2F2F2; animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+.caption .name.low { color: var(--amber); }
 .caption .hint { font-size: 12px; color: var(--dim); margin-top: 6px; }
-.loading { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); font-size: 12px; color: var(--muted); letter-spacing: .12em; display: none; }
-.loading.on { display: block; animation: blink 1.2s ease-in-out infinite; }
+.caption .hint.pulse { animation: blink 1.2s ease-in-out infinite; color: var(--muted); }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes blink { 50% { opacity: .35; } }
 
+/* panels */
 .panel { position: relative; padding: 22px 22px 20px; margin-bottom: 14px; background: var(--line);
   clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
 .panel::before { content: ""; position: absolute; inset: 1px; z-index: 0; background: linear-gradient(180deg, #131314 0%, var(--panel) 60%);
   clip-path: polygon(0 0, calc(100% - 17.6px) 0, 100% 17.6px, 100% 100%, 0 100%); }
 .panel > * { position: relative; z-index: 1; }
-.panel h3 { font-weight: 400; font-size: 15px; margin: 0 0 8px; }
-.panel p, .panel li { font-size: 13px; line-height: 1.6; color: var(--muted); margin: 0; font-weight: 300; }
-.panel ul { margin: 6px 0 0; padding-left: 18px; }
+.panel h3 { font-weight: 400; font-size: 15px; margin: 0 0 6px; }
+.panel p { font-size: 13px; line-height: 1.6; color: var(--muted); margin: 0; font-weight: 300; }
+.panel.low .badge { background: var(--amber); }
 .badge { width: 30px; height: 30px; background: var(--accent); display: grid; place-items: center; margin-bottom: 16px; }
 .badge svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.big { font-weight: 300; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; color: #F4F4F4; margin: 2px 0 6px; }
+.result-row { display: flex; align-items: center; gap: 18px; margin-top: 4px; }
+.ring-wrap { position: relative; width: 92px; height: 92px; flex: none; }
+.ring { --p: 0; --ring: var(--accent); position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--ring) calc(var(--p) * 1%), rgba(255,255,255,.07) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: fill 1.5s cubic-bezier(.2,.8,.2,1) .2s forwards; }
+.ring-num { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 300; font-size: 24px; --p: 0; animation: fill 1.5s cubic-bezier(.2,.8,.2,1) .2s forwards; }
+.ring-num::before { counter-reset: n var(--p); content: counter(n) "%"; }
+@keyframes fill { to { --p: var(--target); } }
+.panel.low .ring { --ring: var(--amber); }
+.type-big { font-weight: 300; font-size: 26px; line-height: 1.12; letter-spacing: -0.02em; color: #F4F4F4; }
+.panel.low .type-big { color: var(--amber); }
+.small { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 6px; font-weight: 300; }
+.warn { font-size: 12.5px; color: var(--amber); line-height: 1.5; margin-top: 12px; }
+.fine { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); display: grid; gap: 4px; }
+.fine .k { font-size: 12px; color: var(--muted); font-weight: 300; }
+.fine .v { font-size: 19px; font-weight: 300; color: #F4F4F4; }
+.fine .v em { font-style: normal; color: var(--accent); font-size: 15px; margin-left: 6px; }
+.fine .also { font-size: 12px; color: var(--dim); font-weight: 300; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .chips span { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); padding: 4px 9px; border-radius: 999px; }
 .credit { font-size: 11.5px; color: var(--dim); margin-top: 12px; line-height: 1.5; }
 .credit a { color: var(--muted); }
-.cta { display: block; margin-top: 14px; text-align: center; padding: 14px 0; border: 1px solid var(--line); text-decoration: none; font-size: 12px; letter-spacing: .14em; position: relative; background: #161617; }
-.cta::before, .cta::after { content: ""; position: absolute; top: -1px; bottom: -1px; width: 6px; border: 2px solid var(--accent); }
-.cta::before { left: -1px; border-right: none; } .cta::after { right: -1px; border-left: none; }
-.cta:hover { background: #1F1F21; }
-@media (max-width: 1050px) { .grid { grid-template-columns: 1fr; } .stage { height: 440px; } .nav .mid { display: none; } .nav { grid-template-columns: 1fr auto; } }
+.bars { display: grid; gap: 12px; margin-top: 14px; }
+.bar { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 13px; font-weight: 300; color: var(--muted); }
+.bar.top { color: var(--text); }
+.bar .pct { font-variant-numeric: tabular-nums; }
+.bar .track { grid-column: 1 / 3; height: 3px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar .fill { height: 100%; transform-origin: left; animation: grow 1s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 90ms + 150ms); }
+@keyframes grow { from { transform: scaleX(0); } }
+.skeleton { height: 12px; background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.11), rgba(255,255,255,.04)); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; margin-top: 10px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* evidence */
+.section { margin-top: 70px; border-top: 1px solid var(--line-soft); padding-top: 46px; }
+.section h2 { font-weight: 200; font-size: clamp(32px, 3.4vw, 48px); letter-spacing: -0.03em; margin: 0 0 10px; color: #F2F2F2; }
+.section .lede2 { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 62ch; margin: 0 0 28px; font-weight: 300; }
+.ev-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.cmp { position: relative; overflow: hidden; background: #0b0b0b; border: 1px solid var(--line); user-select: none; animation: sweep 1.8s cubic-bezier(.6,0,.2,1) .5s backwards; }
+@keyframes sweep { 0% { --x: 100%; } 55% { --x: 18%; } 100% { --x: 50%; } }
+.cmp img { display: block; width: 100%; height: auto; }
+.cmp .over { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--x)); }
+.cmp .handle { position: absolute; top: 0; bottom: 0; left: var(--x); width: 1px; background: #fff; pointer-events: none; box-shadow: 0 0 12px rgba(255,255,255,.6); }
+.cmp .handle::after { content: ""; position: absolute; top: 50%; left: -16px; width: 30px; height: 30px; margin-top: -15px; border-radius: 50%; border: 1px solid #fff;
+  background: rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6'%3E%3Cpath d='M9 7l-5 5 5 5M15 7l5 5-5 5'/%3E%3C/svg%3E") center/18px no-repeat; }
+.cmp-range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.cmp .tag { position: absolute; bottom: 12px; font-size: 11.5px; padding: 6px 10px; background: rgba(0,0,0,.55); color: #ddd; pointer-events: none; }
+.cmp .tag.l { left: 12px; } .cmp .tag.r { right: 12px; }
+.thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.thumbs figure { margin: 0; border: 1px solid var(--line); background: #0b0b0b; transition: border-color .3s, transform .4s cubic-bezier(.2,.8,.2,1); }
+.thumbs figure:hover { border-color: rgba(255,255,255,.3); transform: translateY(-3px); }
+.thumbs img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.thumbs figcaption { font-size: 12px; color: var(--muted); padding: 10px 12px; font-weight: 300; }
+.timeline { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 14px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+.frame { flex: none; width: 112px; transition: transform .35s cubic-bezier(.2,.8,.2,1); animation: rise .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 45ms); }
+.frame:hover { transform: translateY(-6px) scale(1.04); }
+.frame img { width: 100%; display: block; border: 1px solid var(--line); }
+.frame .cbar { height: 3px; margin-top: 6px; }
+.frame .lbl { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; justify-content: space-between; font-weight: 300; }
+.windows { display: flex; gap: 4px; margin-top: 4px; }
+.windows div { flex: 1; height: 44px; animation: rise .5s both; animation-delay: calc(var(--i) * 40ms); }
+.legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px; font-weight: 300; }
+.legend i { display: inline-block; width: 8px; height: 8px; margin-right: 8px; }
+.fusion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
+.fusion .panel { margin: 0; }
+.fusion .bigp { font-weight: 200; font-size: 34px; letter-spacing: -0.02em; margin: 8px 0 2px; color: #F2F2F2; }
+.subh { font-size: 14px; color: var(--text); margin: 34px 0 12px; font-weight: 400; }
+footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--line-soft); font-size: 12px; color: var(--dim); line-height: 1.7; }
+footer a { color: var(--muted); }
+
+@media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .stage { height: 440px; } .mods { display: none; } .nav { grid-template-columns: 1fr auto; } .ev-grid, .fusion { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .right .pill.opt { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; } }
 </style>
 </head>
@@ -101,10 +188,10 @@ h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; l
 <div class="wrap">
   <nav class="nav">
     <div class="brand"><i></i>AERO-ID</div>
-    <div class="mid">3D aircraft hangar and hand-control simulation</div>
-    <div class="links">
-      <a class="pill" href="https://github.com/JuwariyahAnam/aircraft-recognition">GitHub</a>
-      <a class="pill" href="https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb">Open in Colab</a>
+    <div class="mods"><span data-mod-item="image">Photo</span><span data-mod-item="video">Video</span><span data-mod-item="audio">Sound</span></div>
+    <div class="right">
+      <a class="pill opt" href="https://github.com/JuwariyahAnam/aircraft-recognition">GitHub</a>
+      <span class="pill status" id="status"><b></b><span id="status-text">Checking models&hellip;</span></span>
     </div>
   </nav>
 
@@ -112,19 +199,28 @@ h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; l
     <section>
       <div class="eyebrow">Explainable aircraft recognition</div>
       <h1>Know what&rsquo;s<br>flying overhead<span class="px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></h1>
-      <p class="lede">The 3D aircraft from the AERO-ID project. Pick one and drag it to look around, or press
-        Enter simulation and steer it with your hands through the webcam. In the full app, the model recognises
-        the aircraft in a photo, video or sound recording and shows its 3D model here.</p>
-      <div class="hangar" role="group" aria-label="Choose an aircraft">
-        <button class="ac" data-cls="passenger_jet" data-key="b737" aria-pressed="false"><span class="n">Boeing 737 AEW&amp;C</span><span class="t">Passenger jet type</span><span class="tag">Textured model</span></button>
-        <button class="ac" data-cls="fighter_jet" data-key="f16" aria-pressed="false"><span class="n">General Dynamics F-16D</span><span class="t">Fighter jet</span><span class="tag">Textured model</span></button>
-        <button class="ac" data-cls="helicopter" data-key="sh60" aria-pressed="false"><span class="n">Sikorsky SH-60B Seahawk</span><span class="t">Helicopter</span><span class="tag">Spinning rotors</span></button>
-        <button class="ac" data-cls="propeller" data-key="" aria-pressed="false"><span class="n">High-wing propeller plane</span><span class="t">Propeller aircraft</span><span class="tag">Built in code</span></button>
+      <p class="lede">Drop in a photo, a video clip or a sound recording. The model names the aircraft type and model and
+        shows exactly what it based that on. Everything runs in your browser; your files never leave your device.</p>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*,video/*,audio/*,.wav,.mp3,.flac,.ogg,.m4a">
+        <span class="big">Drop a photo, video or sound here</span>
+        <span class="small">or click to choose a file</span>
+        <span class="file" id="file-name"></span>
+      </label>
+      <p class="note-off" id="note-off">Recognition switches on once the trained models are published to this site
+        (Step 11 of the notebook). Until then you can explore the 3D aircraft and the hand-control simulation, or
+        <a href="https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb">run the full app in Colab</a>.</p>
+      <div class="sub">Or explore the hangar</div>
+      <div class="hangar" role="group" aria-label="Show an aircraft in 3D">
+        <button class="ac" data-cls="passenger_jet" data-key="b737" aria-pressed="false"><span class="n">Boeing 737 AEW&amp;C</span><span class="t">Passenger jet</span></button>
+        <button class="ac" data-cls="fighter_jet" data-key="f16" aria-pressed="false"><span class="n">F-16D Block 60</span><span class="t">Fighter jet</span></button>
+        <button class="ac" data-cls="helicopter" data-key="sh60" aria-pressed="false"><span class="n">SH-60B Seahawk</span><span class="t">Helicopter</span></button>
+        <button class="ac" data-cls="propeller" data-key="" aria-pressed="false"><span class="n">High-wing prop plane</span><span class="t">Propeller aircraft</span></button>
       </div>
     </section>
 
     <section>
-      <div class="stage">
+      <div class="stage" id="stage">
         <div id="stage-canvas" data-state="idle"></div>
         <div class="hud" aria-hidden="true"><svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
           <g class="orbit"><circle cx="300" cy="276" r="232"/>
@@ -132,159 +228,232 @@ h1 { font-weight: 200; font-size: clamp(42px, 4.6vw, 68px); line-height: 1.02; l
             <g class="x" transform="translate(495 392)"><circle r="15"/><line x1="-5" y1="-5" x2="5" y2="5"/><line x1="5" y1="-5" x2="-5" y2="5"/></g>
             <circle class="dot" cx="300" cy="44" r="2.5"/><circle class="dot" cx="72" cy="300" r="2"/></g>
           <g class="orbit2"><circle cx="300" cy="276" r="292" stroke-dasharray="2 10"/><path d="M300 -16 v14 M300 554 v14 M8 276 h14 M578 276 h14"/></g>
+          <g class="scan"><path d="M300 44 A232 232 0 0 1 532 276"/></g>
           <path d="M286 276 h28 M300 262 v28" style="stroke: rgba(255,255,255,.25)"/>
         </svg></div>
-        <div class="loading" id="loading">LOADING MODEL&hellip;</div>
         <button id="sim-enter" type="button" title="Control the 3D aircraft with your hands using the webcam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V13M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15.6a1.6 1.6 0 0 1 2.4-2.1L8 14.5"/></svg>ENTER SIMULATION</button>
       </div>
-      <div class="caption"><div class="name" id="cap-name">Boeing 737 AEW&amp;C</div>
-        <div class="hint">Drag to rotate, scroll to zoom, double-click to reset</div></div>
+      <div class="caption" id="caption"><div class="hint">Recognises passenger jets, fighter jets, helicopters and propeller aircraft. Drag the hologram to look around.</div></div>
     </section>
 
     <aside>
       <div style="height:38px"></div>
-      <div class="panel">
-        <div class="badge"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
-        <h3 id="d-type">Passenger jet</h3>
-        <div class="big" id="d-name">Boeing 737 AEW&amp;C</div>
-        <p id="d-text"></p>
-        <div class="chips" id="d-chips"></div>
-        <div class="credit" id="d-credit"></div>
-      </div>
-      <div class="panel">
-        <h3>In the full app</h3>
-        <ul>
-          <li>Recognises the type and the exact aircraft model from a photo, video or sound</li>
-          <li>Cuts the aircraft out with a U-Net and explains the answer with Grad-CAM and LIME</li>
-          <li>Shows the recognised aircraft here in 3D, with the same hand-control simulation</li>
-        </ul>
-        <a class="cta" href="https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb">RUN THE FULL APP IN COLAB</a>
-      </div>
+      <div id="result"></div>
+      <div id="bars"></div>
+      <div id="route"></div>
     </aside>
   </div>
+
+  <div id="evidence"></div>
+  <div id="breakdown"></div>
+
+  <footer>
+    AERO-ID: explainable multimodal aircraft recognition. U-Net segmentation, ResNet-18 classifiers tuned by Particle Swarm
+    Optimization, pseudo-labelling, CAM/Grad-CAM explanations and fine-grained aircraft-model recognition.
+    <a href="https://github.com/JuwariyahAnam/aircraft-recognition">Code on GitHub</a> &middot;
+    <a href="https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb">Full app in Colab</a>.<br>
+    3D models: Boeing 737 AEW&amp;C Prototype, General Dynamics F-16D Block 60 and SH-60B Seahawk Helicopter by Muhamad Mirza Arrafi (Sketchfab).
+  </footer>
 </div>
 
 <div id="viewer-state" hidden></div>
 <script>
 window.__AERO_BASE = "aircraft_recog/static";
-window.__AERO_MODELS = {
- "b737": {
-  "file": "b737.glb",
-  "name": "Boeing 737 AEW&C",
-  "class": "passenger_jet",
-  "matches": [
-   "Boeing 737",
-   "737",
-   "E-7",
-   "Boeing 737 AEW&C"
-  ],
-  "credit": "Boeing 737 AEW&C Prototype by Muhamad Mirza Arrafi (Sketchfab)",
-  "source": "https://sketchfab.com/3d-models/boeing-737-aewc-prototype-bd2d73c132d14a609dbf13bd4cdc652e"
- },
- "f16": {
-  "file": "f16.glb",
-  "name": "General Dynamics F-16D Block 60",
-  "class": "fighter_jet",
-  "matches": [
-   "F-16",
-   "F16",
-   "F-16D"
-  ],
-  "credit": "General Dynamics F-16D Block 60 (Sketchfab download; add the author from the model page)"
- },
- "sh60": {
-  "file": "sh60.glb",
-  "name": "Sikorsky SH-60B Seahawk",
-  "class": "helicopter",
-  "matches": [
-   "SH60",
-   "UH60",
-   "MH60",
-   "SH-60",
-   "UH-60",
-   "Black Hawk",
-   "Seahawk"
-  ],
-  "spin": {
-   "Mesh_0051": [
-    "y",
-    14
-   ],
-   "Mesh_0050": [
-    "x",
-    30
-   ]
-  },
-  "credit": "SH-60B Seahawk Helicopter (Sketchfab download; add the author from the model page)"
- }
-};
+window.__AERO_MODELS = {};
 </script>
 <script src="aircraft_recog/static/three.min.js"></script>
 <script src="aircraft_recog/static/GLTFLoader.js"></script>
 <script src="aircraft_recog/static/viewer3d.js"></script>
 <script src="aircraft_recog/static/hands_control.js"></script>
+<script src="aircraft_recog/static/web_infer.js"></script>
 <script>
 (function () {
-  const INFO = {
-    b737: { type: "Passenger jet", name: "Boeing 737 AEW&C",
-      text: "Airborne early-warning version of the Boeing 737, with the radar mounted on top of the fuselage. Shown when the fine-grained model recognises a Boeing 737.",
-      chips: ["Twin turbofan", "Swept wing", "Radar on top"],
-      credit: 'Model: <a href="https://sketchfab.com/3d-models/boeing-737-aewc-prototype-bd2d73c132d14a609dbf13bd4cdc652e">Boeing 737 AEW&amp;C Prototype</a> by Muhamad Mirza Arrafi (Sketchfab).' },
-    f16: { type: "Fighter jet", name: "General Dynamics F-16D",
-      text: "Two-seat F-16 with its cockpit, canopy glass and weapons load. Shown when the fine-grained model recognises an F-16.",
-      chips: ["Single engine", "Cropped delta wing", "Two-seat cockpit"],
-      credit: "Model: General Dynamics F-16D Block 60, downloaded from Sketchfab." },
-    sh60: { type: "Helicopter", name: "Sikorsky SH-60B Seahawk",
-      text: "Naval version of the Black Hawk family. Shown when the fine-grained model recognises a UH-60, SH-60 or MH-60.",
-      chips: ["Four-blade main rotor", "Tail rotor", "Twin turboshaft"],
-      credit: "Model: SH-60B Seahawk Helicopter, downloaded from Sketchfab." },
-    prop: { type: "Propeller aircraft", name: "High-wing propeller plane",
-      text: "Built in code for this project: lofted fuselage, NACA airfoil wings, painted windows and stripes. Used for propeller aircraft until a realistic model is added.",
-      chips: ["Single piston engine", "High wing with struts", "Fixed landing gear"],
-      credit: "Original model made for AERO-ID." }
+  "use strict";
+  const STATIC = "aircraft_recog/static", MODELS = "web_models";
+  const PRETTY = { passenger_jet: "Passenger jet", fighter_jet: "Fighter jet", helicopter: "Helicopter", propeller: "Propeller aircraft" };
+  const CLASSES = ["passenger_jet", "fighter_jet", "helicopter", "propeller"];
+  const COLOR = { passenger_jet: "#6EA8FE", fighter_jet: "#FF6B4A", helicopter: "#5EE0A0", propeller: "#C9A2FF" };
+  const MOD = { image: "Photo", video: "Video", audio: "Sound" };
+  const ICON = {
+    image: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',
+    video: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
+    audio: '<svg viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>',
+    none: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16v.5"/></svg>',
+    plane: '<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',
   };
-  const buttons = [...document.querySelectorAll(".ac")];
-  let wanted = null;
-  function pick(btn) {
-    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
-    const key = btn.dataset.key, info = INFO[key || "prop"];
-    document.getElementById("d-type").textContent = info.type;
-    document.getElementById("d-name").textContent = info.name;
-    document.getElementById("cap-name").textContent = info.name;
-    document.getElementById("d-text").textContent = info.text;
-    document.getElementById("d-chips").innerHTML = info.chips.map((c) => `<span>${c}</span>`).join("");
-    document.getElementById("d-credit").innerHTML = info.credit;
-    wanted = { cls: btn.dataset.cls, key };
-    show();
+  const HANGAR = {
+    b737: { text: "Airborne early-warning version of the Boeing 737, with the radar mounted on top. Shown when the model recognises a Boeing 737.", chips: ["Twin turbofan", "Swept wing", "Radar on top"] },
+    f16: { text: "Two-seat F-16 with its cockpit, canopy glass and weapons load. Shown when the model recognises an F-16.", chips: ["Single engine", "Cropped delta wing", "Two-seat cockpit"] },
+    sh60: { text: "Naval version of the Black Hawk family. Shown when the model recognises a UH-60, SH-60 or MH-60.", chips: ["Four-blade main rotor", "Tail rotor", "Twin turboshaft"] },
+    propeller: { name: "High-wing propeller plane", text: "Built in code for this project. Shown for propeller aircraft until a realistic model is added.", chips: ["Piston engine", "High wing with struts", "Fixed gear"] },
+  };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const img = (c, q = 0.88) => c ? c.toDataURL("image/jpeg", q) : "";
+  let enabled = false, busy = false;
+
+  // ------------------------------------------------------------ viewer helpers
+  function viewer() { return window.AeroViewer && window.AeroViewer.get(); }
+  function whenViewer(fn) { const v = viewer(); if (v) fn(v); else setTimeout(() => whenViewer(fn), 120); }
+  function setMods(mod) { document.querySelectorAll("[data-mod-item]").forEach((n) => n.classList.toggle("on", n.dataset.modItem === mod)); }
+  function caption(name, hint, opts = {}) {
+    $("caption").innerHTML = (name ? `<div class="name${opts.low ? " low" : ""}">${esc(name)}</div>` : "") +
+      `<div class="hint${opts.pulse ? " pulse" : ""}">${esc(hint)}</div>`;
   }
-  function show() {
-    const v = window.AeroViewer && window.AeroViewer.get();
-    if (!v || !wanted) return setTimeout(show, 150);
-    const load = document.getElementById("loading");
-    load.classList.toggle("on", !!wanted.key);
-    v.setState({ state: "result", cls: wanted.cls, model: wanted.key });
-    if (wanted.key) {
-      // the code-built aircraft shows first; hide the label when the textured model replaces it
-      const placeholder = v.model, t0 = performance.now();
-      (function wait() {
-        if (v.model !== placeholder || performance.now() - t0 > 20000) load.classList.remove("on");
-        else requestAnimationFrame(wait);
-      })();
+
+  // ------------------------------------------------------------ panels
+  function idlePanel() {
+    $("result").innerHTML = `<div class="panel"><div class="badge">${ICON.none}</div><h3>Waiting for a file</h3>
+      <p>The identified type, how confident the model is, the closest aircraft model and its 3D model will appear here.</p></div>`;
+    $("bars").innerHTML = $("route").innerHTML = "";
+  }
+  function hangarPanel(key, cls) {
+    const reg = window.__AERO_MODELS || {}, e = reg[key] || {}, h = HANGAR[key || "propeller"];
+    $("result").innerHTML = `<div class="panel"><div class="badge">${ICON.plane}</div><h3>${esc(PRETTY[cls])}</h3>
+      <div class="type-big">${esc(e.name || h.name)}</div><p style="margin-top:8px">${esc(h.text)}</p>
+      <div class="chips">${h.chips.map((c) => `<span>${esc(c)}</span>`).join("")}</div>
+      ${e.credit ? `<div class="credit">Model: ${e.source ? `<a href="${esc(e.source)}">${esc(e.credit)}</a>` : esc(e.credit)}</div>` : `<div class="credit">Original model made for AERO-ID.</div>`}</div>`;
+    $("bars").innerHTML = $("route").innerHTML = "";
+  }
+  function loadingPanel(msg) {
+    $("result").innerHTML = `<div class="panel"><div class="badge">${ICON.none}</div><h3>Analysing the file</h3><p id="progress">${esc(msg)}</p>
+      <div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%"></div><div class="skeleton" style="width:58%"></div></div>`;
+    $("bars").innerHTML = $("route").innerHTML = $("evidence").innerHTML = $("breakdown").innerHTML = "";
+  }
+  function errorPanel(msg) {
+    $("result").innerHTML = `<div class="panel low"><div class="badge">${ICON.none}</div><h3>File not analysed</h3><p>${esc(msg)}</p></div>`;
+    $("bars").innerHTML = $("route").innerHTML = "";
+  }
+  function resultPanel(r, man) {
+    const pct = Math.round(r.confidence * 100);
+    const detail = r.modality === "video" ? `From ${r.n_frames} video frames${r.audio_probs ? " and the soundtrack" : ""}.`
+      : r.modality === "audio" ? `From ${r.n_windows} five-second ${r.n_windows === 1 ? "piece" : "pieces"} of sound.` : "From a single photo.";
+    let fine = "";
+    if (r.subtypes && r.subtypes.length) {
+      const [[n, p], ...rest] = r.subtypes, also = rest.filter((x) => x[1] >= 0.05).map(([a, q]) => `${esc(a)} ${Math.round(q * 100)}%`).join(", ");
+      fine = `<div class="fine"><span class="k">Closest aircraft model</span><span class="v">${esc(n)} <em>${Math.round(p * 100)}%</em></span>${also ? `<span class="also">Also possible: ${also}</span>` : ""}</div>`;
+    }
+    const warn = r.rejected ? `<div class="warn">Below the ${Math.round(man.reject_threshold * 100)}% confidence limit, so this may not be an aircraft at all.</div>` : "";
+    $("result").innerHTML = `<div class="panel${r.rejected ? " low" : ""}"><div class="badge">${ICON[r.modality]}</div><h3>${r.rejected ? "Unconfirmed" : "Identified"}</h3>
+      <div class="result-row"><div class="ring-wrap" role="img" aria-label="${pct} percent confident"><div class="ring" style="--target:${pct}"></div><div class="ring-num" style="--target:${pct}"></div></div>
+      <div><div class="type-big">${esc(r.label)}</div><div class="small">${esc(detail)}</div></div></div>${fine}${warn}</div>`;
+    const top = r.probs.indexOf(Math.max(...r.probs));
+    $("bars").innerHTML = `<div class="panel"><h3>Confidence by type</h3><div class="bars">${CLASSES.map((c, i) => {
+      const na = r.modality === "audio" && c === "fighter_jet";
+      return `<div class="bar${i === top ? " top" : ""}"><span>${PRETTY[c]}</span><span class="pct">${na ? "n/a" : Math.round(r.probs[i] * 100) + "%"}</span>
+        <div class="track"><div class="fill" style="--i:${i};width:${na ? 0 : (r.probs[i] * 100).toFixed(1)}%;background:${COLOR[c]}"></div></div></div>`; }).join("")}</div>
+      ${r.modality === "audio" ? '<p style="margin-top:12px;font-size:12px;color:var(--dim)">The training recordings contain no fighter jets, so the sound model can’t recognise them.</p>' : ""}</div>`;
+    const ro = r.route, how = { "content and extension agree": "Its contents and its file name both say so.", "recognised from extension only": "Recognised from its file name; the contents were not conclusive.",
+      "unknown extension, recognised from content": "Recognised from its contents; the file name was unfamiliar." }[ro.note] ||
+      `The file name says ${ro.by_extension}, but its contents say ${ro.by_content}, so the contents were trusted.`;
+    $("route").innerHTML = `<div class="panel"><h3>Read as ${MOD[r.modality].toLowerCase()}</h3><p>${esc(how)}</p></div>`;
+  }
+  const legend = () => `<div class="legend">${CLASSES.map((c) => `<span><i style="background:${COLOR[c]}"></i>${PRETTY[c]}</span>`).join("")}</div>`;
+  function evidence(r) {
+    const audio = r.modality === "audio";
+    const base = audio ? r.input : r.cutoutSquare, over = r.gradcam;
+    const tags = audio ? ["The sound as a picture", "What it listened to"] : ["What the model sees", "Where it looked"];
+    let lede = audio ? "The recording is drawn as a spectrogram: time runs left to right and pitch rises upwards. Drag across it to reveal which sounds the model relied on; red areas mattered most."
+      : "The aircraft is cut out from the sky first, so the model judges the aircraft and not the background. Drag across the image to reveal where it looked; red areas mattered most to the answer.";
+    if (r.modality === "video") lede = "Showing the frame the model was most sure about. " + lede;
+    const cmp = over ? `<div class="cmp" style="--x:50%"><img src="${img(base)}" alt="${tags[0]}"><img class="over" src="${img(over)}" alt="${tags[1]}"><div class="handle"></div>
+      <input class="cmp-range" type="range" min="0" max="100" value="50" aria-label="Compare the image with the heatmap" oninput="this.parentNode.style.setProperty('--x', this.value + '%')">
+      <span class="tag l">${tags[0]}</span><span class="tag r">${tags[1]}</span></div>` : "";
+    const figs = audio ? [] : [["Original", r.input], ...(r.mask ? [["Where the aircraft is", r.mask]] : [])];
+    const thumbs = figs.map(([t, c]) => `<figure><img src="${img(c)}" alt="${t}"><figcaption>${t}</figcaption></figure>`).join("");
+    $("evidence").innerHTML = `<section class="section"><h2>Why it decided</h2><p class="lede2">${esc(lede)}</p>
+      ${thumbs ? `<div class="ev-grid">${cmp}<div class="thumbs">${thumbs}</div></div>` : cmp}</section>`;
+  }
+  function breakdown(r, man) {
+    let out = "";
+    if (r.modality === "video") {
+      const v = r.votes, win = v.indexOf(Math.max(...v));
+      const frames = r.frame_thumbs.map((t, i) => { const p = r.frame_probs[i], c = CLASSES[p.indexOf(Math.max(...p))], m = Math.max(...p);
+        return `<div class="frame" style="--i:${i}" title="Frame ${i + 1}: ${PRETTY[c]}, ${Math.round(m * 100)}%"><img src="${img(t, 0.8)}" alt="Frame ${i + 1}">
+          <div class="cbar" style="background:${COLOR[c]};opacity:${(0.35 + 0.65 * m).toFixed(2)}"></div><div class="lbl"><span>${i + 1}</span><span>${Math.round(m * 100)}%</span></div></div>`; }).join("");
+      out = `<section class="section"><h2>Frame by frame</h2><p class="lede2">${Math.max(...v)} of ${v.reduce((a, b) => a + b, 0)} frames say ${PRETTY[CLASSES[win]].toLowerCase()}.
+        The bar under each frame shows what the model saw in it; paler bars were less certain.</p><div class="timeline">${frames}</div>${legend()}`;
+      if (r.audio_probs) {
+        const w = man.fusion_audio_weight, card = (t, p, n) => { const i = p.indexOf(Math.max(...p));
+          return `<div class="panel"><h3>${t}</h3><div class="bigp">${Math.round(p[i] * 100)}%</div><p>${PRETTY[CLASSES[i]]}. ${n}</p></div>`; };
+        out += `<div class="subh">Picture and sound combined</div><div class="fusion">${card("From the frames", r.image_probs, `Counts for ${Math.round((1 - w) * 100)}% of the answer.`)}
+          ${card("From the soundtrack", r.audio_probs, `Counts for ${Math.round(w * 100)}% of the answer.`)}${card("Combined", r.probs, "This is the answer shown above.")}</div>`;
+      }
+      out += "</section>";
+    } else if (r.modality === "audio" && r.window_probs && r.window_probs.length > 1) {
+      out = `<section class="section"><h2>Piece by piece</h2><p class="lede2">The recording was cut into five-second pieces. Each block is one piece, coloured by the type the model heard.</p>
+        <div class="windows">${r.window_probs.map((p, i) => { const c = CLASSES[p.indexOf(Math.max(...p))]; return `<div style="--i:${i};background:${COLOR[c]};opacity:${(0.35 + 0.65 * Math.max(...p)).toFixed(2)}" title="Piece ${i + 1}: ${PRETTY[c]}"></div>`; }).join("")}</div>${legend()}</section>`;
+    }
+    $("breakdown").innerHTML = out;
+  }
+
+  // ------------------------------------------------------------ hangar
+  const buttons = [...document.querySelectorAll(".ac")];
+  const ALIAS = { passenger_jet: "b737", fighter_jet: "f16", helicopter: "sh60" };
+  function showAircraft(btn, fromUser) {
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+    const key = btn.dataset.key, cls = btn.dataset.cls, e = (window.__AERO_MODELS || {})[key] || {};
+    whenViewer((v) => v.setState({ state: "result", cls, model: key }));
+    caption(e.name || HANGAR.propeller.name, "Drag to rotate, scroll to zoom, double-click to reset");
+    hangarPanel(key, cls); setMods("");
+    $("evidence").innerHTML = $("breakdown").innerHTML = "";
+    if (fromUser) try { history.replaceState(null, "", "#" + (key || "propeller")); } catch (err) {}
+  }
+  buttons.forEach((b) => b.addEventListener("click", () => showAircraft(b, true)));
+  function fromHash() {
+    const h = decodeURIComponent((location.hash || "").slice(1)), id = ALIAS[h] || h;
+    return buttons.find((b) => (b.dataset.key || "propeller") === id);
+  }
+  window.addEventListener("hashchange", () => { const b = fromHash(); if (b) showAircraft(b); });
+
+  // ------------------------------------------------------------ recognition
+  async function run(file) {
+    if (!enabled || busy || !file) return;
+    busy = true;
+    buttons.forEach((b) => b.setAttribute("aria-pressed", "false"));
+    $("file-name").textContent = file.name;
+    $("stage").classList.add("busy");
+    whenViewer((v) => v.setState({ state: "loading" }));
+    caption("", "Analysing…", { pulse: true });
+    loadingPanel("Reading the file…");
+    try {
+      const r = await AeroInfer.analyse(file, (m) => { const p = $("progress"); if (p) p.textContent = m; caption("", m, { pulse: true }); });
+      const man = AeroInfer.manifest();
+      setMods(r.modality);
+      const reg = window.__AERO_MODELS || {}, title = r.subtype || r.label;
+      whenViewer((v) => v.setState({ state: r.rejected ? "low" : "result", cls: r.class, model: r.model_key || "" }));
+      let hint = "Drag to rotate, scroll to zoom, double-click to reset";
+      if (r.subtype && r.subtype !== r.label) hint = `${r.label}. ` + (r.model_key ? "" : (Object.values(reg).find((e) => e.class === r.class) ? `Shown with the ${Object.values(reg).find((e) => e.class === r.class).name} 3D model, the closest one available. ` : "")) + hint;
+      caption(title, hint, { low: r.rejected });
+      resultPanel(r, man); evidence(r); breakdown(r, man);
+    } catch (e) {
+      console.error(e);
+      whenViewer((v) => v.setState({ state: "error" }));
+      caption("", "No model to show"); errorPanel(e.message || String(e)); setMods("");
+    } finally {
+      busy = false; $("stage").classList.remove("busy");
     }
   }
-  // Links like .../#f16 open that aircraft (the app's "Open in the 3D hangar" uses this).
-  const ALIAS = { passenger_jet: "b737", fighter_jet: "f16", helicopter: "sh60", propeller: "propeller" };
-  function fromHash() {
-    const h = decodeURIComponent((location.hash || "").slice(1));
-    const id = ALIAS[h] || h;
-    return buttons.find((b) => (b.dataset.key || "propeller") === id) || buttons[0];
-  }
-  buttons.forEach((b) => b.addEventListener("click", () => {
-    pick(b);
-    try { history.replaceState(null, "", "#" + (b.dataset.key || "propeller")); } catch (e) {}
-  }));
-  window.addEventListener("hashchange", () => pick(fromHash()));
-  pick(fromHash());
+  const input = $("file"), drop = $("drop");
+  input.addEventListener("change", () => { if (input.files[0]) run(input.files[0]); input.value = ""; });
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); if (enabled) drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) run(f); });
+
+  // ------------------------------------------------------------ start
+  idlePanel();
+  fetch(`${STATIC}/models/registry.json`).then((r) => r.json()).catch(() => ({})).then((reg) => {
+    window.__AERO_MODELS = reg;
+    const first = fromHash(); if (first) showAircraft(first);
+  });
+  AeroInfer.init(STATIC, MODELS).then((man) => {
+    enabled = !!man;
+    $("status").classList.add(enabled ? "ok" : "off");
+    $("status-text").textContent = enabled ? "Recognition runs in your browser" : "3D only: models not published yet";
+    drop.classList.toggle("disabled", !enabled);
+    input.disabled = !enabled;
+    $("note-off").classList.toggle("show", !enabled);
+  });
 })();
 </script>
 </body>
