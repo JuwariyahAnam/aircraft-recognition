@@ -104,21 +104,36 @@ def step7_optimize(cfg: Config, methods=None, tune_audio=True):
         if len(table) > 1 else table.iloc[0]
     ex.record(cfg, "hp_image_pso", pso_hp)
     ex.record(cfg, "hp_image_best_method", {"method": best_row["Method"], "hp": best_row["Best settings"]})
-    print(f"\n### Retrain image CNN with PSO settings on full data: {pso_hp}")
-    m, r = ex.train_image_model(df, cfg, pso_hp, mask_mode=cfg.mask_mode, name="PSO image")
-    ex.record(cfg, "pso_image", r)
-    save_model(m, cfg.models / "image_cnn_pso.pt")
+    import json as _json
+    prog_path = cfg.results / "optimizer_progress.json"
+    prog = _json.loads(prog_path.read_text()) if prog_path.exists() else {}
+    def mark(k):
+        prog[k] = True
+        prog_path.write_text(_json.dumps(prog, default=str))
+
+    if prog.get("image_retrained") and (cfg.models / "image_cnn_pso.pt").exists():
+        print("\n[resume] image CNN already retrained with the PSO settings")
+    else:
+        print(f"\n### Retrain image CNN with PSO settings on full data: {pso_hp}")
+        m, r = ex.train_image_model(df, cfg, pso_hp, mask_mode=cfg.mask_mode, name="PSO image")
+        ex.record(cfg, "pso_image", r)
+        save_model(m, cfg.models / "image_cnn_pso.pt")
+        mark("image_retrained")
 
     alab, _, aval, _ = split_frames(df, ex.AUD_MODS)
     if len(alab) and tune_audio:
-        print("\n### PSO for the audio CNN")
-        res_a = pso(make_fitness(alab, aval, cfg, mask_mode="none"), budget=cfg.hpo_budget,
-                    pop=cfg.hpo_pop, seed=cfg.seed)
-        ex.record(cfg, "hp_audio_pso", res_a.best_hp)
-        save_json(res_a.to_dict(), cfg.results / "pso_audio.json")
-        m, r = ex.train_audio_model(df, cfg, res_a.best_hp, name="PSO audio")
-        ex.record(cfg, "pso_audio", r)
-        save_model(m, cfg.models / "audio_cnn_pso.pt")
+        if prog.get("audio_done") and (cfg.models / "audio_cnn_pso.pt").exists():
+            print("\n[resume] audio PSO already done")
+        else:
+            print("\n### PSO for the audio CNN")
+            res_a = pso(make_fitness(alab, aval, cfg, mask_mode="none"), budget=cfg.hpo_budget,
+                        pop=cfg.hpo_pop, seed=cfg.seed)
+            ex.record(cfg, "hp_audio_pso", res_a.best_hp)
+            save_json(res_a.to_dict(), cfg.results / "pso_audio.json")
+            m, r = ex.train_audio_model(df, cfg, res_a.best_hp, name="PSO audio")
+            ex.record(cfg, "pso_audio", r)
+            save_model(m, cfg.models / "audio_cnn_pso.pt")
+            mark("audio_done")
     return table
 
 
