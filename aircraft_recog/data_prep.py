@@ -315,8 +315,13 @@ def build_dataset(cfg: Config, denoise_images: bool = True) -> pd.DataFrame:
     rows = []
 
     # ------------------------------------------------------------ images
+    vid_recs = scan_videos(cfg)
+    n_images = cfg.n_images
+    if not vid_recs:   # no clips: take extra photos instead so the total stays about 5,000
+        n_images += cfg.n_video_frames
+        print(f"[video] no clips - using {n_images} images instead of {cfg.n_images}")
     img_recs = scan_fgvc(cfg) + scan_military(cfg) + scan_extra_images(cfg)
-    picked = _balanced_pick(img_recs, cfg.n_images // len(CLASSES), cfg.n_images, rng)
+    picked = _balanced_pick(img_recs, n_images // len(CLASSES), n_images, rng)
     for i, r in enumerate(tqdm(picked, desc="images")):
         sid = f"img_{i:05d}"
         out = out_img / f"{sid}.png"
@@ -333,7 +338,6 @@ def build_dataset(cfg: Config, denoise_images: bool = True) -> pd.DataFrame:
         rows += _build_audio(cfg, aud_recs, out_spec, rng)
 
     # ------------------------------------------------------------- video
-    vid_recs = scan_videos(cfg)
     if vid_recs:
         per_clip = max(1, min(cfg.max_frames_per_clip, cfg.n_video_frames // len(vid_recs)))
         n = 0
