@@ -295,9 +295,9 @@ def _process_image(rec, out_path, size, do_denoise=True):
         box = (max(0, x1), max(0, y1), min(w - 1, x2), min(h - 1, y2))
         if box[2] - box[0] < 4 or box[3] - box[1] < 4:
             box = None
+    img, box = resize_with_box(img, size, box)   # shrink first: denoising a full-size photo takes seconds
     if do_denoise:
         img = denoise(img)
-    img, box = resize_with_box(img, size, box)
     write_rgb(out_path, img)
     return box
 
