@@ -2,6 +2,7 @@
 
 **Live site:** https://juwariyahanam.github.io/aircraft-recognition/ (recognition in the browser, 3D hangar, hand-control simulation)  
 **Docs:** [Project guide](docs/Aircraft_Recognition_Project_Guide.pdf) · [Full documentation (40 pages)](docs/AERO-ID_Project_Documentation.pdf) · [Guide → implementation map](docs/GUIDE_CHECKLIST.md)  
+**No Colab GPU?** Use the [Kaggle version](notebooks/Aircraft_Recognition_Kaggle.ipynb): runs every step unattended on Kaggle's free GPU (Save & Run All).  
 **Run the full app in Colab:** https://colab.research.google.com/github/JuwariyahAnam/aircraft-recognition/blob/main/notebooks/Aircraft_Recognition_Colab.ipynb
 
 A program that recognises the type of aircraft in a **photo, video or sound recording** and shows **why** it made that decision.
